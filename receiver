@@ -1,1 +1,14 @@
 
+Include Libraries
+
+Define 
+
+Define and initialize global volatile variables
+
+Initializations:
+-UART1 (pin)
+-ADC pins
+-Timer
+-Delay (wait milliseconds)
+
+Main:
