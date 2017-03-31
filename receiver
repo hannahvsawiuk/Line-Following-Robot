@@ -1,9 +1,9 @@
 //ELEC 291 Project 2
 //Receiver/Car controller
-//Hannah Sawiuk, Adrian Viquez, Jake Osborne, Sajan Rajdev, Gregor Morrison, Christian Schroeder
+//Hannah Sawiuk, Adrian Viquez, Jake Osborne, Sajan Rajdev, Gregor Morrison
 
 //********************************//
-//	   	Included Libraries		   //	
+//	   	Included Libraries		  //	
 //********************************//
 #include <C8051F38x.h>
 #include <stdlib.h>
@@ -20,25 +20,16 @@
 #define right
 #define left
 #define center
-//***	ADC pins***//
-#define r_p1
-#define r_p2
-#define l_p1
-#define l_p2
-#define c_p1
-#define c_p2
-#define r_mux LQFP32_MUX_P_ //LQFP32_MUX_P2_6 form
-#define l_mux LQFP32_MUX_P_
-#define c_mux LQFP32_MUX_P_
 
 //********************************//
 //	   	Volatile Variables		  //	note: type unsigned char or unsigned int only
 //********************************//
 		//***PWM***//
-volatile unsigned char pwm_count=0;
-volatile unsigned char overflow_count=0
+volatile unsigned char pwm_count = 0;
+volatile unsigned char overflow_count = 0;
 		//***ADC***//
 volatile float	V_ADC[3];
+volatile unsigned char time = 0;
 
 
 //********************************//
@@ -238,17 +229,43 @@ float Volts_at_Pin(unsigned char pin)
 void main (void)
 {	
 	//Configure pins as analog inputs
-	InitPinADC(r_p1,r_p2); // Right inductor
-	InitPinADC(l_p1,l_p2); // Left Inductor
-	InitPinADC(c_p1,c_p2); // Center Inductor
+	InitPinADC(,); // Right inductor
+	InitPinADC(,); // Left Inductor
+	InitPinADC(,); // Center Inductor
 	InitADC(); // Initialize the ADC
 	
-	V_ADC[0]=Volts_at_Pin(r_mux); //Right Inductor
-	V_ADC[1]=Volts_at_Pin(l_mux); //Left Inductor
-	V_ADC[2]=Volts_at_Pin(c_mux); //Center Inductor
+	V_ADC[0]=Volts_at_Pin(); //Right Inductor
+	V_ADC[1]=Volts_at_Pin(); //Left Inductor
+	V_ADC[2]=Volts_at_Pin(); //Center Inductor
 }
 //commands: stop, turn right at next intersection, turn left at next intersection, move forward, move backward, rotate 180 degrees
 //also: manage distance
+
+void instruction (void)
+{
+  overflow_count=0;
+  while(==1);
+  TR0=1;//start timer
+  while(!=1)
+  {
+  	if(TF0==1) 
+    {
+      TF0=0;
+      overflow_count++;
+    }
+  }
+  while(==1)
+  {
+    if(TF0==1) 
+    {
+      TF0=0;
+      overflow_count++;
+    }
+  }
+  TR0=0;
+  time=(overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK);
+
+ }
 //********************************//
 //	 	Maintain Distance     	  //	
 //********************************//
@@ -262,13 +279,16 @@ void maintain_d (void)
 
 	if(dright > dleft)
 	{
-	
+		
 	}
 	else if(dright < dleft)
 	{
 
 	}
 	else
+	{
+
+	}
 }
 
 //********************************//
@@ -287,5 +307,6 @@ void turn_right(void)
 
 
 }
+	
 	
 
