@@ -8,13 +8,14 @@
 #include <avr/interrupt.h>
 #include <string.h>
 #include <stdio.h>
-#include<avr/hc06.h>
+
 
 unsigned volatile int cnt = 0;
 //unsigned volatile int pwm = 2;
 
 unsigned volatile int ModifyTimerLow = 19972; //2013 for 10khz, 19972 for 15khz
 unsigned volatile int ModifyTimerHigh = 65534;
+volatile int interrupt_flag = 0;
 
 
 #define B0 0x01
@@ -38,20 +39,26 @@ ISR(TIMER1_OVF_vect)
 	TCNT1L = ModifyTimerLow;
 	TCNT1H = ModifyTimerHigh;
 	
-	cnt++;
-	if(cnt>1)
+	if(!interrupt_flag)
 	{
-		cnt=0;
-	}
-	if(cnt==1)
-	{
-		PORTB = 0b00000001; // Toggle pin 14 (PB0)
+		cnt++;
+		if(cnt>1)
+		{
+			cnt=0;
+		}
+		if(cnt==1)
+		{
+			PORTB = 0b00000001; // Toggle pin 14 (PB0)
+		}
+		else
+		{
+			PORTB = 0b00000000; // Turn off PB0
+		}
 	}
 	else
 	{
 		PORTB = 0b00000000; // Turn off PB0
 	}
-	
 }
 
 
@@ -107,7 +114,7 @@ char * readString(void)
 	static char* temp;
 	temp = rxstr;
 
-	while((*temp = getByte()) != '\r')
+	while((*temp = getByte()) != 'X')
 	{
 		++temp;
 	}
@@ -117,6 +124,8 @@ char * readString(void)
 
 int main (void)
 {
+
+	char* ps;
 	// Set PORTB 0 pin as output, turn it off
 	DDRB = 0x01;
 	PORTB = 0x00;
@@ -125,79 +134,53 @@ int main (void)
 	TCCR1B |= _BV(CS10); //Can set different arrangements of bits for prescalers [see pg 173 of datasheet]
 	TIMSK1 |= _BV(TOIE1); //see pg 184 of datasheet, setting this bit enables timer1 to interrupt from overflow
 	
-	char *ps;
+	
 	initUART();
 	sei();
-	writeString("Robot Controller\r\n\n");
+	
 
 	while (1) {
-		writeString("1.- Rotate 180 degrees\n\r");
-		writeString("2.- Next intersection, turn right\n\r");
-		writeString("3.- Next intersection, turn left \n\r");
-		writeString("4.- Move forward \n\r");
-		writeString("5.- Move backward \n\r");
-		writeString("6.- Stop\n\r");
-		writeString("Enter a command: ");
-		ps=hc_06_bluetooth_receive_byte();
 		
-		writeString(ps);
-		putByte('\r');
-		putByte('\n');
-
+		ps=readString();
 		
 		if(strcmp(ps,"0") == 1){
-			writeString("\r\nRotate 180°\n\n\r");
-			cli();
+/*			cli();
 			TCNT1L = ModifyTimerLow;
 			TCNT1H = ModifyTimerHigh;
 			_delay_ms(1000);
 			sei();
+			*/
+			interrupt_flag=1;
+			_delay_ms(1000);
+			interrupt_flag=0;
 			
 			//PORTB = B1;
 		}
 		else if(strcmp(ps,"1") == 1){
-			writeString("\r\nNext intersection, turn right\n\n\r");
-			cli();
-			TCNT1L = ModifyTimerLow;
-			TCNT1H = ModifyTimerHigh;
+			interrupt_flag=1;
 			_delay_ms(2000);
-			sei();
+			interrupt_flag=0;
 		}
 		else if(strcmp(ps,"2") == 1){
-			writeString("\r\nNext intersection, turn left\n\n\r");
-			cli();
-			TCNT1L = ModifyTimerLow;
-			TCNT1H = ModifyTimerHigh;
+			interrupt_flag=1;
 			_delay_ms(3000);
-			sei();
+			interrupt_flag=0;
 		}
 		else if(strcmp(ps,"3") == 1){
-			writeString("\r\nMove forward\n\n\r");
-			cli();
-			TCNT1L = ModifyTimerLow;
-			TCNT1H = ModifyTimerHigh;
+			interrupt_flag=1;
 			_delay_ms(4000);
-			sei();
+			interrupt_flag=0;
 		}
 		else if(strcmp(ps,"4") == 1){
-			writeString("\r\
-			nMove backward\n\n\r");
-			cli();
-			TCNT1L = ModifyTimerLow;
-			TCNT1H = ModifyTimerHigh;
+			interrupt_flag=1;
 			_delay_ms(5000);
-			sei();
+			interrupt_flag=0;
 		}
 		else if(strcmp(ps,"5") == 1){
-			writeString("\r\nStop\n\n\r");
-			cli();
-			TCNT1L = ModifyTimerLow;
-			TCNT1H = ModifyTimerHigh;
+			interrupt_flag=1;
 			_delay_ms(6000);
-			sei();
+			interrupt_flag=0;
 		}
-		else 
-			writeString("\r\nWrong Input\n\n\r");
 	}
 	return 0;
 }
