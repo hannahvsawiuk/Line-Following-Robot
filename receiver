@@ -17,9 +17,9 @@
 #define BAUDRATE  115200L   // Baud rate of UART in bps
 #define Vmax
 //***	Digital ADC pins***//
-#define right 	P2.0
-#define left    P2.1
-#define center  P2.3
+#define right 	P2_0
+#define left    P2_1
+#define center  P2_3
 
 #define pwm_constant	75.0
 
@@ -256,10 +256,17 @@ void main (void)
 
 void instruction (void)
 {
+  
+	char pin=right;
+	if(V[0] >= "logic 1")
+		pin = right;
+	else if(V[1] >= "logic 1")
+		pin = left;
+
   overflow_count=0;
-  while(==1);
+  while(pin==1);
   TR0=1;//start timer
-  while(!=1)
+  while(pin!=1)
   {
   	if(TF0==1) 
     {
@@ -267,7 +274,7 @@ void instruction (void)
       overflow_count++;
     }
   }
-  while(==1)
+  while(pin==1)
   {
     if(TF0==1) 
     {
@@ -290,15 +297,15 @@ void maintain_d (void)
 	dright=V_ADC[0];
 	dleft=V_ADC[1];
 
-	if (abs(dright-dleft) > V)
+	if (abs(dright-dleft) > 0.16)
 		if(dright > dleft)
 		{
-			pwmr = int(pwm_constant-pwm_constant*abs((dleft-dright)/dright)));
+			pwmr = int(pwm_constant-pwm_constant*abs((dleft-dright)/dright));
 			pwml = pwm_constant;
 		}
 		else
 		{
-			pwml = int(pwm_constant-pwm_constant*abs((dleft-dright)/dright)));
+			pwml = int(pwm_constant-pwm_constant*abs((dleft-dright)/dright));
 			pwmr = pwm_constant;
 		}
 	else
@@ -325,3 +332,4 @@ void turn_right(void)
 
 
 }
+	
