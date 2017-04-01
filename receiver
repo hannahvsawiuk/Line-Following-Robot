@@ -1,6 +1,6 @@
 //ELEC 291 Project 2
 //Receiver/Car controller
-//Hannah Sawiuk, Adrian E Viquez, Jake Osborne, Sajan Rajdev, Gregor Morrison
+//Hannah Sawiuk, Adrian Viquez, Jake Osborne, Sajan Rajdev, Gregor Morrison
 
 //********************************//
 //	   	Included Libraries		  //	
@@ -17,20 +17,31 @@
 #define BAUDRATE  115200L   // Baud rate of UART in bps
 #define Vmax
 //***	Digital ADC pins***//
-#define right
-#define left
-#define center
+#define right 	P2.0
+#define left    P2.1
+#define center  P2.3
+
+#define pwm_constant	75.0
+
+	//*** MOSFET PINS ***//
+#define OUT_R1
+#define OUT_R0
+#define OUT_L1
+#define OUT_L0
+
 
 //********************************//
 //	   	Volatile Variables		  //	note: type unsigned char or unsigned int only
 //********************************//
 		//***PWM***//
 volatile unsigned char pwm_count = 0;
+volatile unsigned char pwmr = 0;
+volatile unsigned char pwml = 0;
+
 volatile unsigned char overflow_count = 0;
 		//***ADC***//
 volatile float	V_ADC[3];
 volatile unsigned char time = 0;
-
 
 //********************************//
 //	   	Main Initializations	  //	
@@ -234,9 +245,11 @@ void main (void)
 	InitPinADC(,); // Center Inductor
 	InitADC(); // Initialize the ADC
 	
-	V_ADC[0]=Volts_at_Pin(); //Right Inductor
-	V_ADC[1]=Volts_at_Pin(); //Left Inductor
-	V_ADC[2]=Volts_at_Pin(); //Center Inductor
+	V_ADC[0]=Volts_at_Pin(right); //Right Inductor
+	V_ADC[1]=Volts_at_Pin(left); //Left Inductor
+	V_ADC[2]=Volts_at_Pin(center); //Center Inductor
+
+
 }
 //commands: stop, turn right at next intersection, turn left at next intersection, move forward, move backward, rotate 180 degrees
 //also: manage distance
@@ -274,21 +287,26 @@ void maintain_d (void)
 	float dright = 0.0;
 	float dleft = 0.0;
 
-	dright=(V_ADC[0]/Vmax)*100;
-	dleft=(V_ADC[1]/Vmax)*100;
+	dright=V_ADC[0];
+	dleft=V_ADC[1];
 
-	if(dright > dleft)
-	{
-		
-	}
-	else if(dright < dleft)
-	{
-
-	}
+	if (abs(dright-dleft) > V)
+		if(dright > dleft)
+		{
+			pwmr = int(pwm_constant-pwm_constant*abs((dleft-dright)/dright)));
+			pwml = pwm_constant;
+		}
+		else
+		{
+			pwml = int(pwm_constant-pwm_constant*abs((dleft-dright)/dright)));
+			pwmr = pwm_constant;
+		}
 	else
 	{
-
+		pwmr= pwm_constant;
+		pwml=  pwm_constant;
 	}
+	
 }
 
 //********************************//
@@ -307,6 +325,3 @@ void turn_right(void)
 
 
 }
-	
-	
-
