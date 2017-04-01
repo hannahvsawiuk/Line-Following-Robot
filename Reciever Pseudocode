@@ -1,0 +1,46 @@
+Turn left (same protocol for right; replace every right with left and left with right)
+if signal recieved by the station is left, turn on left turn flag (LT_flag?) (this command is done in Proceed function)
+Turn 180
+	if left flag is on, and if the third inductor detects intersection, do Turn left
+
+		left motor doesn't rotate (l_motor = 0 or a value close to 0)
+	
+		right motor turns on at a certain rate until right inductor detects the wire in the middle (like hits the wall) (till the right sensor has a reading to adjust) 
+		(while right sensor is not reading middle wire)
+	
+		proceed
+	
+Turn 180 deg
+if signal recieved by the station is Turn 180, do Turn 180
+
+	left motor doesn't rotate (l_motor = 0)
+	right motor turns on at a certain rate (different from Turn left/right until right inductor detects the wire in the middle (like "hits" a mag wall) 
+	(till the right sensor has a reading to adjust) 
+	(while right sensor is not reading middle wire)
+	
+	proceed
+	
+Stop 
+if signal recieved by the station is stop (if the third inductor detects intersection), do Turn stop
+
+	both motors = 0
+	await for every other external signal (a bunch of if's statements?)
+	
+Proceed 
+if signal recieved by the station is proceed, do Proceed
+	
+	read the wire position ( while(1) )
+		if wire is within a range (in the middle), both motors turn at a certain rather equal rate
+		if wire is to the right, increase rate of left motor, decrease the right motor by a little
+		if wire is to the left, increase rate of the right motor, decrease the left motor by a little
+		await for every other external signal (a bunch of if's statements? to check for flags)
+
+Reverse 
+if signal recieved by the station is proceed, do Reverse
+
+	read the wire position ( while(1) )
+		if wire is within a range (in the middle), both motors turn at a certain rather equal rate (but in backward direction)
+		if wire is to the right, increase rate of left motor, decrease the right motor by a little
+		if wire is to the left, increase rate of the right motor, decrease the left motor by a little
+		await for every other external signal (a bunch of if's statements? to check for flags)
+			(make sure that if turn left or turn right are set, that the car rotates 180) 
