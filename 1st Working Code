@@ -178,7 +178,7 @@ void Timer2_ISR (void) interrupt 5
 		OUT_R1 = pwm_count > (100-pwmr)?1:0;
 
 		OUT_L0 = 0;
-		OUT_L1 = pwm_count > (100-pwmr)?1:0;
+		OUT_L1 = pwm_count > (100-pwml)?1:0;
 	}
 	else//backward
 	{		
@@ -269,8 +269,7 @@ void main (void)
 		V_ADC[1]=Volts_at_Pin(left); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center); //Center Inductor
 		
-		printf("VR=%f  VL=%f  VC=%f",V_ADC[0],V_ADC[1],V_ADC[2]); 
-	//	printf("pwmr=%f  pwml=%f\r",pwmr,pwml);   
+		printf("VR=%f VL=%f VC=%f pwmr=%u  pwml=%u\r",V_ADC[0],V_ADC[1],V_ADC[2],pwmr,pwml);   
 
 		// maintain_d();
 
@@ -386,15 +385,18 @@ void maintain_d (void)
 	dright=V_ADC[0];
 	dleft=V_ADC[1];
 
-	if (fabsf(dright-dleft) > 0.05)
+	if (fabsf(dright-dleft) > 0.005)//Constant adjusts sensitivity
 		if(dright > dleft)
 		{
+			
 			pwmr = (unsigned char)(pwm_constant*fabsf(dleft/dright));
+			//pwmr = 0;
 			pwml = pwm_constant;
 		}
 		else
 		{
 			pwml = (unsigned char)(pwm_constant*fabsf(dright/dleft));
+			//pwmr = 0;
 			pwmr = pwm_constant;
 		}
 	else
