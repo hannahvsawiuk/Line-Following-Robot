@@ -143,42 +143,58 @@ int main (void)
 		
 		ps=readString();
 		
-		if(strcmp(ps,"0") == 1){
-/*			cli();
-			TCNT1L = ModifyTimerLow;
-			TCNT1H = ModifyTimerHigh;
-			_delay_ms(1000);
-			sei();
-			*/
+		if(strcmp(ps,"0") == 1){ // 1. Rotate 180°
 			interrupt_flag=1;
-			_delay_ms(1000);
+			_delay_ms(30);
 			interrupt_flag=0;
-			
-			//PORTB = B1;
-		}
-		else if(strcmp(ps,"1") == 1){
+			_delay_ms(10);
 			interrupt_flag=1;
-			_delay_ms(2000);
+			_delay_ms(30);
 			interrupt_flag=0;
 		}
-		else if(strcmp(ps,"2") == 1){
+		else if(strcmp(ps,"1") == 1){ // 2. Turn right
 			interrupt_flag=1;
-			_delay_ms(3000);
+			_delay_ms(30);
+			interrupt_flag=0;
+			_delay_ms(20);
+			interrupt_flag=1;
+			_delay_ms(30);
 			interrupt_flag=0;
 		}
-		else if(strcmp(ps,"3") == 1){
+		else if(strcmp(ps,"2") == 1){ // 3. Turn Left
 			interrupt_flag=1;
-			_delay_ms(4000);
+			_delay_ms(30);
+			interrupt_flag=0;
+			_delay_ms(30);
+			interrupt_flag=1;
+			_delay_ms(30);
 			interrupt_flag=0;
 		}
-		else if(strcmp(ps,"4") == 1){
+		else if(strcmp(ps,"3") == 1){ // 4. Forward
 			interrupt_flag=1;
-			_delay_ms(5000);
+			_delay_ms(30);
+			interrupt_flag=0;
+			_delay_ms(40);
+			interrupt_flag=1;
+			_delay_ms(30);
 			interrupt_flag=0;
 		}
-		else if(strcmp(ps,"5") == 1){
+		else if(strcmp(ps,"4") == 1){ // 5. Backward
 			interrupt_flag=1;
-			_delay_ms(6000);
+			_delay_ms(30);
+			interrupt_flag=0;
+			_delay_ms(50);
+			interrupt_flag=1;
+			_delay_ms(30);
+			interrupt_flag=0;
+		}
+		else if(strcmp(ps,"5") == 1){ // 6. Stop
+			interrupt_flag=1;
+			_delay_ms(30);
+			interrupt_flag=0;
+			_delay_ms(60);
+			interrupt_flag=1;
+			_delay_ms(30);
 			interrupt_flag=0;
 		}
 	}
