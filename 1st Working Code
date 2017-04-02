@@ -389,12 +389,12 @@ void maintain_d (void)
 	if (fabsf(dright-dleft) > 0.05)
 		if(dright > dleft)
 		{
-			pwmr = (pwm_constant-int(pwm_constant*fabsf((dleft-dright)/dright)));
+			pwmr = (unsigned char)(pwm_constant*fabsf(dleft/dright));
 			pwml = pwm_constant;
 		}
 		else
 		{
-			pwml = (pwm_constant-int(pwm_constant*fabsf((dleft-dright)/dright)));
+			pwml = (unsigned char)(pwm_constant*fabsf(dright/dleft));
 			pwmr = pwm_constant;
 		}
 	else
