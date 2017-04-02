@@ -36,7 +36,8 @@
 //	   Function Prototypes	      //	
 //********************************//
 void maintain_d (void);
-void stop (voRx void forward (void);
+void stop (void);
+void forward (void);
 void backward (void);
 
 //********************************//
@@ -63,7 +64,7 @@ volatile unsigned char instruction = 1;
 //********************************//
 char _c51_external_startup (void)
 {
-	PCA0MD&=(~0x40) ;    // DISABLE WDT: clear Watchdog Enable bit
+	PCA0MD&=(~0x40);    // DISABLE WDT: clear Watchdog Enable bit
 	VDM0CN=0x80; // enable VDD monitor
 	RSTSRC=0x02|0x04; // Enable reset on missing clock detector and VDD
 
@@ -353,13 +354,15 @@ void main (void)
 				stop();
 				break;
 			case 2:
-				if(I_flag==1){
-				turn_right();
+				if(I_flag==1)
+				{
+					turn_right();
 				}
 				break;
 			case 3:
-				if(I_flag==1){
-				turn_left();
+				if(I_flag==1)
+				{
+					turn_left();
 				}
 				break;
 			case 4:
@@ -375,71 +378,8 @@ void main (void)
 				forward();
 				break;
 		}
-*/
-//}
-//commands: stop, turn right at next intersection, turn left at next intersection, move forward, move backward, rotate 180 degrees
-//also: manage distance
+}*/
 
-/*void instructions (void)
-{
-	//logic 1 = [1.7,]
-	char pin=right;
-	if(V[0] >= 1.7)
-		pin = right;
-	else if(V[1] >= 1.7)
-		pin = left;
-	else if(V[2] >= 1.7)
-		pin = center
-	else //if none of the voltages valid, off track, so stop
-	{
-		instruction = 1;//stop
-		return;
-	}
-
-	TL0 = 0; 
-	TH0 = 0;
-	TF0 = 0;
-	overflow_count = 0;
-
-	while(pin != 0); // Wait for the signal to be zero
-	while(pin != 1); // Wait for the signal to be one
-	TR0 = 1; // Start the timer
-	while(pin != 0) // Wait for the signal to be zero
-	{
-		if(TF0 == 1) // Did the 16-bit timer overflow?
-		{
-			TF0 = 0;
-			overflow_count++;
-		}
-	}
-	while(pin != 1) // Wait for the signal to be one
-	{ 
-		if(TF0 == 1) // Did the 16 -bit timer overflow?
-		{
-			TF0 = 0;
-			overflow_count++;
-		}
-	}
-	TR0 = 0; // Stop timer 0, the 24-bit number [overflow_count-TH0-TL0] has the period!
- 	time = 1000*(overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK);
-
-  //temp vars a and b tbd
-  if (0.5 < time < 1.7)
-  	instruction = 1;
-  else if (a < time < b)
-  	instruction = 2;
-  else if (a < time < b)
-  	instruction = 3;
-  else if (a < time < b)
-  	instruction = 4;
-  else if (a < time < b)
-  	instruction = 5;
-  else if (a < time < b)
-  	instruction = 6;
-  else
-  	instruction = 4;//forward
-}
-*/
 //********************************//
 //	 	Maintain Distance     	  //	
 //********************************//
