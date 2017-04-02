@@ -30,12 +30,13 @@
 #define OUT_R1 P2_5
 #define OUT_R0 P2_4
 
+#define Rx P0_5
+
 //********************************//
 //	   Function Prototypes	      //	
 //********************************//
 void maintain_d (void);
-void stop (void);
-void forward (void);
+void stop (voRx void forward (void);
 void backward (void);
 
 //********************************//
@@ -79,7 +80,8 @@ char _c51_external_startup (void)
 	OSCICN |= 0x03; // Configure internal oscillator for its maximum frequency
 
 	// Configure UART0
-	SCON0 = 0x10; 
+	SCON0 = 0x10;
+
 #if (SYSCLK/BAUDRATE/2L/256L < 1)
 	TH1 = 0x10000-((SYSCLK/BAUDRATE)/2L);
 	CKCON &= ~0x0B;                  // T1M = 1; SCA1:0 = xx
@@ -122,9 +124,6 @@ char _c51_external_startup (void)
 	TCON&=0b_1111_1101;
 	IT0= 1;
 	EX0 = 1;*/
-
-	//UART1 Configuration
-	SCON1 = 0x11; //0b_0001_0001-> REN1 enabled and RI1 enabled
 
 	EA=1; // Enable interrupts
 	
@@ -202,21 +201,22 @@ void Timer2_ISR (void) interrupt 5
 	}
 }
 //********************************//
-//	 	 UART1 Interrupt 	 	  //	
+//	 	 UART0 Interrupt 	 	  //	
 //********************************//
-void UART1(void) interrupt 16
+void UART0_ISR (void) interrupt 4
 {
-	//clear UART1 interrupt flag
+	RI0 = 0;//clear UART0 interrupt flag
 	
 	TL0 = 0; 
 	TH0 = 0;
 	TF0 = 0;
 	overflow_count = 0;
 
-	//while(pin != 0); // Wait for the signal to be zero
-	while(P1_3 != 1); // Wait for the signal to be one
+	while(V_ADC[0] < 0.5);
+	//while(Rx != 1); // Wait for the signal to be one
 	TR0 = 1; // Start the timer
-	while(P1_3 != 0) // Wait for the signal to be zero
+	//while(Rx != 0) // Wait for the signal to be zero
+	while(V_ADC[0] > 0.5)
 	{
 		if(TF0 == 1) // Did the 16-bit timer overflow?
 		{
@@ -224,7 +224,8 @@ void UART1(void) interrupt 16
 			overflow_count++;
 		}
 	}
-	while(P1_3 != 1) // Wait for the signal to be one
+	//while(Rx != 1) // Wait for the signal to be one
+	while(V_ADC[0] < 0.5)
 	{ 
 		if(TF0 == 1) // Did the 16 -bit timer overflow?
 		{
@@ -236,20 +237,22 @@ void UART1(void) interrupt 16
  	time = 1000*(overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK); //in ms
 
   if ( (5 < time) && (time < 15) )
-  	instruction = 1;
+  	instruction = 1;//stop
   else if ( (15 < time) && (time < 25) )
-  	instruction = 2;
+  	instruction = 2; //right
   else if ( (25 < time) && (time < 35) )
-  	instruction = 3;
+  	instruction = 3;//left
   else if ( (35 < time )&& (time < 45) )
-  	instruction = 4;
+  	instruction = 4;//forward
   else if ( (45 < time) && (time < 55) )
-  	instruction = 5;
+  	instruction = 5;//backwards
   else if ( (55 < time) && (time < 65) )
-  	instruction = 6;
+  	instruction = 6;//rotate
   else
   	instruction = 4;//forward
+
 }
+  
 //********************************//
 //	 	 Initialize ADC   		  //	
 //********************************//
