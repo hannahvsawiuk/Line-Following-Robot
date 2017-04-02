@@ -164,7 +164,7 @@ int main (void)
 			interrupt_flag=1;
 			_delay_ms(60);
 			interrupt_flag=0;
-			_delay_ms(10);
+			_delay_ms(60);
 			interrupt_flag=1;
 			_delay_ms(60);
 			interrupt_flag=0;
@@ -255,7 +255,7 @@ int main (void)
 			interrupt_flag=1;
 			_delay_ms(60);
 			interrupt_flag=0;
-			_delay_ms(60);
+			_delay_ms(10);
 			interrupt_flag=1;
 			_delay_ms(60);
 			interrupt_flag=0;
