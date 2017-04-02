@@ -1,0 +1,107 @@
+//********************************//
+//	 	  	1:Stop    //	
+//********************************//
+void stop (void)
+{
+	pwml = 0;
+	pwmr = 0;
+}
+
+//***************************************//
+// 2:Turn right at the next intersection //	
+//***************************************//
+void turn_right(void)
+{	
+	
+	pwmr = 0;
+	pwml = pwm_constant;
+
+}
+//***************************************//
+// 3:Turn left at the next intersection  //	
+//***************************************//
+void turn_left(void)
+{	
+
+	pwml = 0;
+	pwmr = pwm_constant;
+
+}
+
+//********************************//
+//	 	  4:Forward       //	
+//********************************//
+void forward(void)
+{	
+	direction = 1;//forward
+	maintain_d ();
+}
+
+//********************************//
+//	 	  5:Backward      //	
+//********************************//
+void backward(void)
+{	
+	direction = 0;//backward
+	maintain_d ();
+}
+
+//********************************//
+//	 	  6:Rotate        //	
+//********************************//
+void rotate(void)
+{
+`
+	pwml = 0;
+	pwmr = pwm_constant;
+	waitms (time_constant); //a constant we will hardcode after trial and error
+	
+}
+
+//********************************//
+//	 Check Intersection Flag  //
+//********************************//
+void checkI_flag(void)
+{
+
+	I_flag = 0; //Default. Not at intersection
+
+	if(V_ADC[2] > Ithresh_voltage){ //Check if the voltage read by the third inductor
+		I_flag = 1;             //is greater than the perpendicular voltage
+	}
+
+{
+
+
+
+checkI_flag();
+
+
+switch(instruction)
+		{
+			case 1:
+				stop();
+				break;
+			case 2:
+				if(I_flag==1){
+				turn_right();
+				}
+				break;
+			case 3:
+				if(I_flag==1){
+				turn_left();
+				}
+				break;
+			case 4:
+				forward();
+				break;
+			case 5:
+				backward();
+				break;
+			case 6:
+				rotate();
+				break;
+			default:
+				forward();
+				break;
+		}
