@@ -43,6 +43,7 @@ void stop (void);
 void forward (void);
 void backward (void);
 void checkI_flag(void);
+void bin2dec (void);
 
 //********************************//
 //	   	Volatile Variables		  //	note: type unsigned char or unsigned int only
@@ -186,35 +187,49 @@ void External_Interrupt (void) interrupt 0
 	//lsb first
 	if(pulse_count == 0)
 		pulse_count++;
+	while(pulse_count >=1 && pulse_count <= 3 )
+	{
+		waitms(500);
+		waitms(500);
+		if(Receive == 1)
+			Instructions[pulse_count-1] = 1;
+		else
+			Instructions[pulse_count-1] = 0;
+		pulse_count++;
+	}			
+	pulse_count = 0;
+}
+/*
+	if(pulse_count == 0)
+		pulse_count++;
 	else if(pulse_count == 1)
 	{			
-		waitms(67);
+		waitms(500);
 		pulse_count++;
 		if(Receive == 1)
-			Instruction[0] == 1;
+			Instructions[0] = 1;
 		else
-			Instruction[0] == 0;
+			Instructions[0] = 0;
 	}
 	else if(pulse_count == 2)
 	{			
-		waitms(67);
+		waitms(255);
 		pulse_count++;
 		if(Receive == 1)
-			Instruction[1] == 1;
+			Instructions[1] = 1;
 		else
-			Instruction[1] == 0;
+			Instructions[1] = 0;
 	}
 	else if(pulse_count == 3)
 	{			
-		waitms(67);
-		pulse_count == 0
+		pulse_count = 0;
+		waitms(255);
 		if(Receive == 1)
-			Instruction[2] == 1;
+			Instructions[2] = 1;
 		else
-			Instruction[2] == 0;
+			Instructions[2] = 0;
 	}
-
-}
+}*/
 //********************************//
 //	 	  Timer2 interrupt	  	  //	
 //********************************//
@@ -324,28 +339,31 @@ void main (void)
 	//main system run
 	while(1)
 	{
-		if(Volts_at_Pin(right_ADC) > 0.05)
-			V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor
-		if(Volts_at_Pin(left_ADC) > 0.05)
-			V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
-		if(Volts_at_Pin(center_ADC) > 0.05)
-			V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
+		//precision peak detector
+		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor
+		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
+		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
 	
-		printf("VR=%1.3f VL=%1.3f VC=%1.3f\r",V_ADC[0],V_ADC[1],V_ADC[2]);
+		bin2dec();
+		printf("action=%u pulses=%u %u%u%u ",action,pulse_count,Instructions[2],Instructions[1],Instructions[0]);
+		if(Receive == 1)
+			printf("1\r");
+		else
+			printf("0\r");
  	
-		checkI_flag();
+		//checkI_flag();
 
-		if(V_ADC[0] < 0.05 && V_ADC[1] < 0.05 && V_ADC[2] < 0.05) //if the car is off track, stop
+		/*if(V_ADC[0] < 0.05 && V_ADC[1] < 0.05 && V_ADC[2] < 0.05) //if the car is off track, stop
 			stop();
 		else if(I_flag == 1)
 			stop();
 		else
 			forward();
 		
-		checkI_flag();
-		bin2dec();
+		//checkI_flag();*/
 
-		switch(action)
+
+		/*switch(action)
 		{
 			case 1:
 				stop();
@@ -374,7 +392,7 @@ void main (void)
 			default:
 				forward();
 				break;
-		}
+		}*/
 	}
 }
 
@@ -406,8 +424,9 @@ void maintain_d (void)
 //********************************//
 //	 		  Bin2Dec   	 	  //	
 //********************************//
+void bin2dec (void)
 {
-	action = Instructions[0] + Instructions[1]*2 + Instructions[2]*4;
+	action = (unsigned char)((Instructions[0] + 2*Instructions[1] + 4*Instructions[2])-1);
 }
 
 //********************************//
@@ -484,8 +503,5 @@ void checkI_flag(void)
 		I_flag = 1;             //is greater than the perpendicular voltage
 	}
 }
-
-    Contact GitHub API Training Shop Blog About 
-
-    © 2017 GitHub, Inc. Terms Privacy Security Status Help 
+ 
 
