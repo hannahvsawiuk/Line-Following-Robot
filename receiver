@@ -33,7 +33,7 @@
 #define OUT_R1 P2_5
 #define OUT_R0 P2_4
 
-#define Rx P0_5
+#define Receive P1_1
 
 //********************************//
 //	   Function Prototypes	      //	
@@ -62,8 +62,8 @@ volatile float dright = 0.0;
 volatile float dleft = 0.0;
 
 	//	Instructions //
-volatile unsigned char time = 0;
-volatile unsigned char instruction = 1;
+volatile unsigned char action = 0;
+volatile unsigned char Instructions[3];
 
 //********************************//
 //	   	Main Initializations	  //	
@@ -179,53 +179,42 @@ void waitms (unsigned int ms)
 	}
 }
 //********************************//
-//	 	  Timer 0 ISR			  //	
-//********************************//
-
-void Timer0_ISR (void) interrupt 1
-{	
-	overflow_count++;
-}
-//********************************//
 //	 	  External interrupt	  //	
 //********************************//
-
 void External_Interrupt (void) interrupt 0
 {
-	
-	if(pulse_count == 1)
-	{
-		overflow_count = 1;
-		TR0 = 0; //stop timer
-		time = (overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK); //in ms
-		pulse_count = 0;
+	//lsb first
+	if(pulse_count == 0)
+		pulse_count++;
+	else if(pulse_count == 1)
+	{			
+		waitms(67);
+		pulse_count++;
+		if(Receive == 1)
+			Instruction[0] == 1;
+		else
+			Instruction[0] == 0;
 	}
-	else	
-	{
-		pulse_count = 1;
-		TH0 = 0;
-		TL0 = 0;	
-		TR0 = 1; //start timer
+	else if(pulse_count == 2)
+	{			
+		waitms(67);
+		pulse_count++;
+		if(Receive == 1)
+			Instruction[1] == 1;
+		else
+			Instruction[1] == 0;
+	}
+	else if(pulse_count == 3)
+	{			
+		waitms(67);
+		pulse_count == 0
+		if(Receive == 1)
+			Instruction[2] == 1;
+		else
+			Instruction[2] == 0;
 	}
 
-  if ( (65 < time) && (time < 75) )
-  	instruction = 1;//stop
-  else if ( (75 < time) && (time < 85) )
-  	instruction = 2; //right
-  else if ( (85 < time) && (time < 95) )
-  	instruction = 3;//left
-  else if ( (95 < time )&& (time < 105) )
-  	instruction = 4;//forward
-  else if ( (105 < time) && (time < 115) )
-  	instruction = 5;//backwards
-  else if ( (115 < time) && (time < 125) )
-  	instruction = 6;//rotate
-  else
-  	instruction = 4;//forward
 }
-
-
-
 //********************************//
 //	 	  Timer2 interrupt	  	  //	
 //********************************//
@@ -327,36 +316,36 @@ void main (void)
 	InitPinADC(2,0); // Left Inductor
 	InitPinADC(2,1); // Center Inductor
 	InitADC(); // Initialize the ADC
+	Instructions[0] = 0;
+	Instructions[1] = 0;
+	Instructions[2] = 0;
+	pulse_count = 0;
 	
 	//main system run
 	while(1)
 	{
-		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
-		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
-		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
+		if(Volts_at_Pin(right_ADC) > 0.05)
+			V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor
+		if(Volts_at_Pin(left_ADC) > 0.05)
+			V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
+		if(Volts_at_Pin(center_ADC) > 0.05)
+			V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
 	
-	time = (overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK); //in ms
-		pulse_count = 0;
-		printf("VR=%1.3f VL=%1.3f VC=%1.3f TH0=%u TL0=%u  time=%f \r",V_ADC[0],V_ADC[1],V_ADC[2],TH0,TL0,time);
-   
-		
+		printf("VR=%1.3f VL=%1.3f VC=%1.3f\r",V_ADC[0],V_ADC[1],V_ADC[2]);
+ 	
 		checkI_flag();
 
 		if(V_ADC[0] < 0.05 && V_ADC[1] < 0.05 && V_ADC[2] < 0.05) //if the car is off track, stop
 			stop();
-		else if(I_flag == 1){
-			printf("STOP");
+		else if(I_flag == 1)
 			stop();
-		}
 		else
 			forward();
-	}
-}
+		
+		checkI_flag();
+		bin2dec();
 
-		//checkI_flag();
-
-
-		/*switch(instruction)
+		switch(action)
 		{
 			case 1:
 				stop();
@@ -386,7 +375,8 @@ void main (void)
 				forward();
 				break;
 		}
-}*/
+	}
+}
 
 //********************************//
 //	 	Maintain Distance     	  //	
@@ -412,6 +402,12 @@ void maintain_d (void)
 		pwmr = pwm_constant;
 		pwml =  pwm_constant;
 	}	
+}
+//********************************//
+//	 		  Bin2Dec   	 	  //	
+//********************************//
+{
+	action = Instructions[0] + Instructions[1]*2 + Instructions[2]*4;
 }
 
 //********************************//
@@ -488,3 +484,8 @@ void checkI_flag(void)
 		I_flag = 1;             //is greater than the perpendicular voltage
 	}
 }
+
+    Contact GitHub API Training Shop Blog About 
+
+    © 2017 GitHub, Inc. Terms Privacy Security Status Help 
+
