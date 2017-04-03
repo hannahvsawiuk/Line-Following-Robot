@@ -56,6 +56,7 @@ volatile unsigned char direction = 1; //1=forward, 0 = backwards
 volatile unsigned char overflow_count = 0;
 volatile unsigned char I_flag = 0; //1 = intersection detected, 0 = no intersection detected
 volatile unsigned char pulse_count = 0;
+volatile unsigned char decode_flag = 1;
 
 		///	ADC	//
 volatile float V_ADC[3];
@@ -187,17 +188,21 @@ void External_Interrupt (void) interrupt 0
 	//lsb first
 	if(pulse_count == 0)
 		pulse_count++;
-	while(pulse_count >=1 && pulse_count <= 3 )
+	else if(pulse_count >=1 && pulse_count <= 3 )
 	{
-		waitms(500);
-		waitms(500);
+		decode_flag = 0;
+		waitms(67);
 		if(Receive == 1)
 			Instructions[pulse_count-1] = 1;
 		else
 			Instructions[pulse_count-1] = 0;
-		pulse_count++;
-	}			
-	pulse_count = 0;
+		pulse_count++;	
+	}	
+	else
+	{	
+		decode_flag = 1;
+		pulse_count = 0;
+	}
 }
 /*
 	if(pulse_count == 0)
@@ -334,6 +339,7 @@ void main (void)
 	Instructions[0] = 0;
 	Instructions[1] = 0;
 	Instructions[2] = 0;
+	bin2dec();
 	pulse_count = 0;
 	
 	//main system run
@@ -344,8 +350,10 @@ void main (void)
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
 	
-		bin2dec();
-		printf("action=%u pulses=%u %u%u%u ",action,pulse_count,Instructions[2],Instructions[1],Instructions[0]);
+		maintain_d();
+		if(decode_flag == 1)
+			bin2dec();
+		printf("action=%u pulses=%u %u%u%u %1.3f %1.3f %u %u ",action,pulse_count,Instructions[2],Instructions[1],Instructions[0],V_ADC[0],V_ADC[1],pwmr,pwml);
 		if(Receive == 1)
 			printf("1\r");
 		else
