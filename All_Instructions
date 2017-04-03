@@ -21,6 +21,8 @@
 #define right_ADC 	LQFP32_MUX_P1_7
 #define left_ADC    LQFP32_MUX_P2_0
 #define center_ADC  LQFP32_MUX_P2_1
+#define b_right_ADC  LQFP32_MUX_P //Pin to be defined
+#define b_left_ADC  LQFP32_MUX_P //Pin to be defined
 //	Base PWM value	//
 #define pwm_constant	30
 #define rotate_constant 45
@@ -58,7 +60,7 @@ volatile unsigned char overflow_count = 0;
 volatile unsigned char I_flag = 0; //1 = intersection detected, 0 = no intersection detected
 
 		///	ADC	//
-volatile float V_ADC[3];
+volatile float V_ADC[5];
 volatile float dright = 0.0;
 volatile float dleft = 0.0;
 
@@ -350,6 +352,8 @@ void main (void)
 	InitPinADC(1,7); // Right inductor
 	InitPinADC(2,0); // Left Inductor
 	InitPinADC(2,1); // Center Inductor
+	InitPinADC(,); //  Back Left Inductor //Pin to be defined
+	InitPinADC(,); // Back Right Inductor //Pin to be defined
 	InitADC(); // Initialize the ADC
 	forward();
 	instruction = 2;
@@ -359,6 +363,8 @@ void main (void)
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
+		V_ADC[3]=Volts_at_Pin(b_right_ADC); //Back Right Inductor
+		V_ADC[4]=Volts_at_Pin(b_left_ADC); //Back Left Inductor
 		
 		printf("VR=%f VL=%f VC=%f pwmr=%u  pwml=%u\r",V_ADC[0],V_ADC[1],V_ADC[2],pwmr,pwml);   
 
@@ -497,7 +503,7 @@ void forward(void)
 void backward(void)
 {	
 	direction = 0;//backward
-	//maintain_d();
+	//maintain_d_back;
 }
 
 //********************************//
@@ -529,4 +535,30 @@ void checkI_flag(void)
 		waitms(100);						 //Check if the voltage read by the third inductor
 		I_flag = 1;             //is greater than the perpendicular voltage
 	}
+}
+
+//********************************//
+//	 Maintain Back Distance    	  //	
+//********************************//
+void maintain_d_back (void)
+{
+	dright=V_ADC[3];
+	dleft=V_ADC[4];
+
+	if (fabsf(dright-dleft) > 0.005)//Constant adjusts sensitivity
+		if(dright > dleft)
+		{
+			pwmr = (unsigned char)(pwm_constant*fabsf(dleft/dright));
+			pwml = pwm_constant;
+		}
+		else
+		{
+			pwml = (unsigned char)(pwm_constant*fabsf(dright/dleft));
+			pwmr = pwm_constant;
+		}
+	else
+	{
+		pwmr = pwm_constant;
+		pwml =  pwm_constant;
+	}	
 }
