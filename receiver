@@ -24,6 +24,9 @@
 //	Base PWM value	//
 #define pwm_constant	30
 
+//Intersection Threshold Value
+#define Ithresh_voltage 2
+
 //	MOSFET Pins	//
 #define OUT_L1 P2_2
 #define OUT_L0 P2_3
@@ -39,6 +42,7 @@ void maintain_d (void);
 void stop (void);
 void forward (void);
 void backward (void);
+void checkI_flag(void);
 
 //********************************//
 //	   	Volatile Variables		  //	note: type unsigned char or unsigned int only
@@ -49,6 +53,7 @@ volatile unsigned char pwmr = 0;
 volatile unsigned char pwml = 0;
 volatile unsigned char direction = 1; //1=forward, 0 = backwards 
 volatile unsigned char overflow_count = 0;
+volatile unsigned char I_flag = 0; //1 = intersection detected, 0 = no intersection detected
 
 		///	ADC	//
 volatile float V_ADC[3];
@@ -213,11 +218,11 @@ void UART0_ISR (void) interrupt 4
 	TF0 = 0;
 	overflow_count = 0;
 
-	while(V_ADC[0] < 0.5);
+	while(V_ADC[0] < 0.05);
 	//while(Rx != 1); // Wait for the signal to be one
 	TR0 = 1; // Start the timer
 	//while(Rx != 0) // Wait for the signal to be zero
-	while(V_ADC[0] > 0.5)
+	while(V_ADC[0] > 0.05)
 	{
 		if(TF0 == 1) // Did the 16-bit timer overflow?
 		{
@@ -226,7 +231,7 @@ void UART0_ISR (void) interrupt 4
 		}
 	}
 	//while(Rx != 1) // Wait for the signal to be one
-	while(V_ADC[0] < 0.5)
+	while(V_ADC[0] < 0.05)
 	{ 
 		if(TF0 == 1) // Did the 16 -bit timer overflow?
 		{
@@ -322,6 +327,7 @@ float Volts_at_Pin(unsigned char pin)
 //********************************//
 void main (void)
 {	
+	
 	InitPinADC(1,7); // Right inductor
 	InitPinADC(2,0); // Left Inductor
 	InitPinADC(2,1); // Center Inductor
@@ -333,13 +339,18 @@ void main (void)
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
+	
+		printf("VR=%1.3f VL=%1.3f VC=%1.3f pwmr=%u  pwml=%u  time=%f \r",V_ADC[0],V_ADC[1],V_ADC[2],pwmr,pwml,time);
+   
 		
-		printf("VR=%f VL=%f VC=%f pwmr=%u  pwml=%u\r",V_ADC[0],V_ADC[1],V_ADC[2],pwmr,pwml);   
+		checkI_flag();
 
-		// maintain_d();
-
-		if(V_ADC[0] < 0.5 && V_ADC[1] < 0.5 && V_ADC[2] < 0.5) //if the car is off track, stop
+		if(V_ADC[0] < 0.05 && V_ADC[1] < 0.05 && V_ADC[2] < 0.05) //if the car is off track, stop
 			stop();
+		else if(I_flag == 1){
+			printf("STOP");
+			stop();
+		}
 		else
 			forward();
 	}
@@ -472,13 +483,11 @@ void backward(void)
 //********************************//
 //	 Check Intersection Flag      //
 //********************************//
-/*void checkI_flag(void)
+void checkI_flag(void)
 {
-
 	I_flag = 0; //Default. Not at intersection
 
 	if(V_ADC[2] > Ithresh_voltage){ //Check if the voltage read by the third inductor
 		I_flag = 1;             //is greater than the perpendicular voltage
 	}
-}*/
-
+}
