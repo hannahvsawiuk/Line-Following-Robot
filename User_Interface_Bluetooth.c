@@ -161,12 +161,21 @@ int main (void)
 			
 			PORTC &= (~C3); // Turns Green ON
 			
+			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
 			interrupt_flag=0;
-			_delay_ms(60);
+			_delay_ms(33);
+			
+			//Signal: 110
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
+			interrupt_flag=0;
+			_delay_ms(67);
+			interrupt_flag=0;
+			_delay_ms(67);
+			
+			//Turns wave ON after signal transmission
 			interrupt_flag=0;
 		}
 		else if(strcmp(ps,"1") == 1){ // 2. Turn right
@@ -179,12 +188,21 @@ int main (void)
 			
 			PORTC &= (~C1); // Turn right yellow ON
 			
+			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
 			interrupt_flag=0;
-			_delay_ms(20);
+			_delay_ms(33);
+			
+			//Signal: 010
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
+			interrupt_flag=0;
+			_delay_ms(67);
+			interrupt_flag=1;
+			_delay_ms(67);
+			
+			//Turns wave ON after signal transmission
 			interrupt_flag=0;
 		}
 		else if(strcmp(ps,"2") == 1){ // 3. Turn Left
@@ -197,12 +215,21 @@ int main (void)
 			
 			PORTC &= (~C2); // Turn left yellow on
 			
+			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
 			interrupt_flag=0;
-			_delay_ms(30);
+			_delay_ms(33);
+			
+			//Signal: 011
+			interrupt_flag=0;
+			_delay_ms(67);
+			interrupt_flag=0;
+			_delay_ms(67);
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
+			
+			//Turns wave ON after signal transmission
 			interrupt_flag=0;
 		}
 		else if(strcmp(ps,"3") == 1){ // 4. Forward
@@ -215,12 +242,21 @@ int main (void)
 			
 			PORTC &= (~C3); // Turns Green ON
 			
+			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
 			interrupt_flag=0;
-			_delay_ms(40);
+			_delay_ms(33);
+			
+			//Signal: 100
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
+			interrupt_flag=1;
+			_delay_ms(67);
+			interrupt_flag=0;
+			_delay_ms(67);
+			
+			//Turns wave ON after signal transmission
 			interrupt_flag=0;
 		}
 		else if(strcmp(ps,"4") == 1){ // 5. Backward
@@ -234,12 +270,21 @@ int main (void)
 			PORTC &= (~C3); // Turns Green ON
 			PORTC &= (~C4); // Turns RGB Red ON
 			
+			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
 			interrupt_flag=0;
-			_delay_ms(50);
+			_delay_ms(33);
+			
+			//Signal: 101
+			interrupt_flag=0;
+			_delay_ms(67);
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
+			interrupt_flag=0;
+			_delay_ms(67);
+			
+			//Turns wave ON after signal transmission
 			interrupt_flag=0;
 		}
 		else if(strcmp(ps,"5") == 1){ // 6. Stop
@@ -252,12 +297,21 @@ int main (void)
 			
 			PORTC &= (~C0); //Turn red ON
 			
+			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
 			interrupt_flag=0;
-			_delay_ms(10);
+			_delay_ms(33);
+			
+			//Signal: 001
+			interrupt_flag=0;
+			_delay_ms(67);
 			interrupt_flag=1;
-			_delay_ms(60);
+			_delay_ms(67);
+			interrupt_flag=1;
+			_delay_ms(67);
+			
+			//Turns wave ON after signal transmission
 			interrupt_flag=0;
 		}
 	}
