@@ -191,7 +191,7 @@ void External_Interrupt (void) interrupt 0
 	//lsb first
 	if(pulse_count == 0)
 		pulse_count++;
-	else if(pulse_count >=1 && pulse_count <= 3 )
+	else if(pulse_count >=1 && pulse_count < 3 )
 	{
 		decode_flag = 0;
 		waitms(67);
@@ -205,6 +205,12 @@ void External_Interrupt (void) interrupt 0
 	{	
 		decode_flag = 1;
 		pulse_count = 0;
+		waitms(67);
+		if(Receive == 1)
+			Instructions[2] = 1;
+		else
+			Instructions[2] = 0;
+		pulse_count++;	
 	}
 }
 
