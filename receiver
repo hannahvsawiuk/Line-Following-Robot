@@ -337,7 +337,6 @@ float Volts_at_Pin(unsigned char pin)
 void main (void)
 {	
 	int i = 0;
-	printf("main1\n");
 	InitPinADC(1,4); // Backright Inductor
 	InitPinADC(1,5); // Backright Inductor
 	InitPinADC(1,6); // Backleft inductor
@@ -348,7 +347,7 @@ void main (void)
 
 	UART1_Init(110); //baud rate of 110
 
-	for(j = 0; j < 5; j++)
+	for(i = 0; i < 5; i++)
 		V_ADC[i]=0;
 	pulse_count = 0;
 	stop();
@@ -356,12 +355,9 @@ void main (void)
 	//main system run
 	while(1)
 	{
-		
-		printf("main\n");
 		c = getchar();
 		uc = (unsigned char)c;
 		action = uc;
-		printf("%c %u\n",c,action);
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
@@ -369,49 +365,55 @@ void main (void)
 		V_ADC[4]=Volts_at_Pin(backleft_ADC); //Backleft Inductor
 		V_ADC[5]=Volts_at_Pin(comm_ADC); //communication Inductor
 			
-		printf("%u Vr=%1.2f Vl=%1.2f Vc=%1.2f Vrb=%1.2f Vlb=%1.2f\r",action,V_ADC[0],V_ADC[1],V_ADC[2],V_ADC[3],V_ADC[4]);
+		//printf("Vr=%1.2f Vl=%1.2f Vc=%1.2f Vbr=%1.2f Vlbl=%1.2f Vcm=%1.2f\r",V_ADC[0],V_ADC[1],V_ADC[2],V_ADC[3],V_ADC[4],V_ADC[5]);
+		printf("%u %u %u\r",action,pwmr,pwml);
 
 		if (direction == 1 || direction == 0) //only maintain distance when going forward or backward
 			maintain_d();
 
-		if(( (V_ADC[0] < 0.045) && (V_ADC[1] < 0.044) && (V_ADC[3] < 0.045) && (V_ADC[4] < 0.045) && (V_ADC[5] < 0.045)) == 0) //if the car is off track, stop
-			stop();
+		//if(( (V_ADC[0] < 0.045) && (V_ADC[1] < 0.044) && (V_ADC[3] < 0.045) && (V_ADC[4] < 0.045) && (V_ADC[5] < 0.045)) == 0) //if the car is off track, stop
+		//	stop();
 		
-		else
-		{
-			checkI_flag();
+		//else
+		//{
+			//checkI_flag();
 
-			if(action == )
+			if(action == 252)
 			{
+				printf("stop");
 				stop();
 			}
-			else if(action == )
+			else if(action == 128)
 			{
+				printf("right");
 				if(I_flag == 1)
 					turn_right();
 			}
-			else if(action == )
+			else if(action == 224)
 			{	
+				printf("left");
 				if(I_flag == 1)
 					turn_left();
 			}
-			else if(action == )
+			else if(action == 240)
 			{
+				printf("forward");
 				forward();
 			}
-			else if(action == )
+			else if(action == 248)
 			{
+				printf("backward");
 				backward();
 			}
-			else if(action == )
+			else if(action == 255)
 			{
+				printf("180");
 				rotate();
 			}
 			else
 			{
-				forward();
+				break;
 			}
-		}
 	}
 }
 
@@ -423,6 +425,7 @@ void maintain_d (void)
 	printf("maintain\n");
 	if (direction == 1) //forwards
 	{
+		printf("stage1");
 		dright = V_ADC[0]; //right 
 		dleft = V_ADC[1]; //left
 	}
@@ -433,20 +436,20 @@ void maintain_d (void)
 	}
 
 	if (fabsf(dright-dleft) > sensitivity)//Constant adjusts sensitivity
-	{
+	{	printf("stage2");
 		if(dright > dleft)
-		{
+		{	printf("stage3");
 			pwmr = (unsigned char)(pwm_constant*fabsf(dleft/dright));
 			pwml = pwm_constant;
 		}
 		else
-		{
+		{	printf("stage4");
 			pwml = (unsigned char)(pwm_constant*fabsf(dright/dleft));
 			pwmr = pwm_constant;
 		}
 	}
 	else
-	{
+	{	printf("stage5");
 		pwmr = pwm_constant;
 		pwml = pwm_constant;
 	}	
@@ -458,6 +461,7 @@ void stop (void)
 {
 	pwml = 0;
 	pwmr = 0;
+	action = 0;
 }
 
 //***************************************//
@@ -470,6 +474,7 @@ void turn_right(void)
 	//keep turning while checking voltages until fairly centered
 	//then follow the wire
 	
+	printf("right1");
 	direction = 3;
 	pwmr = pwm_constant/2;
 	pwml = pwm_constant;
@@ -479,6 +484,7 @@ void turn_right(void)
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 	}
+	action = 0;
 	forward(); //go forward after
 }
 
@@ -487,7 +493,8 @@ void turn_right(void)
 //***************************************//
 void turn_left(void)
 {	
-	direction = 2;
+	printf("left1");
+	direction  = 2;
 	pwml = pwm_constant/2;
 	pwmr = pwm_constant;
 	waitms(100);
@@ -496,6 +503,7 @@ void turn_left(void)
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 	}
+	action = 0;
 	forward(); //go forward after
 
 }
@@ -504,18 +512,24 @@ void turn_left(void)
 //********************************//
 void forward(void)
 {	
+	printf("forward1");
 	direction = 1;//forward
 	pwml = pwm_constant;
 	pwmr = pwm_constant;
+	action = 0;
+	maintain_d();
 }
 //********************************//
 //	 	  5:Backward      		  //	
 //********************************//
 void backward(void)
 {	
+	printf("backward1");
 	direction = 0;//backward
 	pwml = pwm_constant;
 	pwmr = pwm_constant;
+	action = 0;
+	maintain_d();
 }
 
 //********************************//
@@ -523,6 +537,7 @@ void backward(void)
 //********************************//
 void rotate(void)
 {
+	printf("180 1");
 	direction = 2;
 	pwml = rotate_constant; 
 	pwmr = rotate_constant;
@@ -532,6 +547,7 @@ void rotate(void)
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 	}
+	action = 0;
 	forward(); //go forward after	
 }
 
@@ -540,7 +556,7 @@ void rotate(void)
 //********************************//
 void checkI_flag(void)
 {
-
+	printf("Iflag1");
 	I_flag = 0; //Default. Not at intersection
 
 	if(V_ADC[2] >= Ithresh_voltage)
