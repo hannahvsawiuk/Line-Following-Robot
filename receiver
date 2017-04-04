@@ -16,15 +16,21 @@
 //********************************//
 #define SYSCLK    48000000L // SYSCLK frequency in Hz
 #define BAUDRATE  115200L   // Baud rate of UART in bps
-
-//	ADC Pins	// (negative input of peak detectors)
+//	Digital Pins	// 
+#define right 		P0_2 	
+#define left 		P0_3
+#define center 		P0_4
+#define backright 	P0_5
+#define backleft 	P0_6
+//	ADC Pins	// 
 #define right_ADC 	LQFP32_MUX_P1_7
 #define left_ADC    LQFP32_MUX_P2_0
 #define center_ADC  LQFP32_MUX_P2_1
-//	Base PWM value	//
-#define pwm_constant	30
-#define rotate_constant 45
-#define Ithresh_voltage 1.5
+//	General Constants	//
+#define pwm_constant	30 //Base PWM value
+#define rotate_constant 45 //Rotate PWM value
+#define Ithresh_voltage 1.5 //Approaching intersection voltage value
+#define sensitivity 0.005 //maintain_d voltage sensitivity factor
 
 //	MOSFET Pins	//
 #define OUT_L1 P2_2
@@ -32,7 +38,7 @@
 #define OUT_R1 P2_5
 #define OUT_R0 P2_4
 
-#define Receive P1_1
+#define Receive P1_1 // 0 or 1: depends on instruction
 
 //********************************//
 //	   Function Prototypes	      //	
@@ -66,7 +72,7 @@ volatile float dright = 0.0;
 volatile float dleft = 0.0;
 
 	//	Instructions //
-volatile unsigned char action = 0;
+volatile unsigned char action = 1;//stop
 volatile unsigned char Instructions[3];
 
 //********************************//
@@ -130,13 +136,14 @@ char _c51_external_startup (void)
 	ET2=1;         // Enable Timer2 interrupts
 	TR2=1;         // Start Timer2
 
-	//External INTO interrupts
-	/*IT01CF|=0b_0001_0000; //(P0_1 for INT1 and P0_0 for INT0)->
+	//External INT1 and INT0 interrupt configuration
+	IT01CF|=0b_0001_0000; //(P0_1 for INT1 and P0_0 for INT0)->
 	TCON&=0b_1111_1101;
-	IT0= 1;
-	EX0 = 1;*/
+	IT0 = 1;
+	EX0 = 1;
 
-	EA=1; // Enable interrupts
+	// Enable interrupts
+	EA=1;
 	
 	return 0;
 }
@@ -184,37 +191,27 @@ void waitms (unsigned int ms)
 }
 
 //********************************//
-//	 	  External interrupt	  //	
+//	 External interrupt (INT0)	  //	
 //********************************//
-void External_Interrupt (void) interrupt 0
+void External_Interrupt (void) interrupt 0 //P0_0 as trigger
 {
-	//lsb first
-	if(pulse_count == 0)
-		pulse_count++;
-	else if(pulse_count >=1 && pulse_count < 3 )
+	//LSB first
+	P0_7 = 1;
+	if((pulse_count+1 > 0) && (pulse_count <=2))
 	{
-		decode_flag = 0;
-		waitms(67);
-		if(Receive == 1)
-			Instructions[pulse_count-1] = 1;
-		else
-			Instructions[pulse_count-1] = 0;
+		decode_flag = 0; //don't decode instruction yet
+		waitms(100);
+		P0_7 = 0;
+		Instructions[pulse_count] = Receive;
 		pulse_count++;	
 	}	
 	else
 	{	
-		decode_flag = 1;
+		P0_7 = 0;
 		pulse_count = 0;
-		waitms(67);
-		if(Receive == 1)
-			Instructions[2] = 1;
-		else
-			Instructions[2] = 0;
-		pulse_count++;	
+		decode_flag = 1; //decode and read instruction
 	}
 }
-
-
 //********************************//
 //	 	  Timer2 interrupt	  	  //	
 //********************************//
@@ -242,8 +239,8 @@ void Timer2_ISR (void) interrupt 5
 		OUT_L0 = pwm_count > (100-pwml)?1:0;
 		OUT_L1 = 0;
 	}
-	else if(direction == 2) {	//Left wheel forward, right wheel backwards
-	
+	else if(direction == 2) 	//Left wheel forward, right wheel backwards
+	{
 		OUT_R0 = pwm_count > (100-pwmr)?1:0;
 		OUT_R1 = 0;
 		
@@ -251,69 +248,15 @@ void Timer2_ISR (void) interrupt 5
 		OUT_L1 = pwm_count > (100-pwml)?1:0;
 	}
 	
-	else {	//Right wheel forward, left wheel backwards
-	
+	else 	//Right wheel forward, left wheel backwards
+	{
 		OUT_R0 = 0;
 		OUT_R1 = pwm_count > (100-pwmr)?1:0;
 		
 		OUT_L0 = pwm_count > (100-pwml)?1:0;
 		OUT_L1 = 0;
-	}
-		
+	}	
 }
-//********************************//
-//	 	 UART0 Interrupt 	 	  //	
-//********************************//
-/*void UART0_ISR (void) interrupt 4
-{
-	RI0 = 0;//clear UART0 interrupt flag
-	
-	TL0 = 0; 
-	TH0 = 0;
-	TF0 = 0;
-	overflow_count = 0;
-
-	while(V_ADC[0] < 0.5);
-	//while(Rx != 1); // Wait for the signal to be one
-	TR0 = 1; // Start the timer
-	//while(Rx != 0) // Wait for the signal to be zero
-	while(V_ADC[0] > 0.5)
-	{
-		if(TF0 == 1) // Did the 16-bit timer overflow?
-		{
-			TF0 = 0;
-			overflow_count++;
-		}
-	}
-	//while(Rx != 1) // Wait for the signal to be one
-	while(V_ADC[0] < 0.5)
-	{ 
-		if(TF0 == 1) // Did the 16 -bit timer overflow?
-		{
-			TF0 = 0;
-			overflow_count++;
-		}
-	}
-	TR0 = 0; // Stop timer 0, the 24-bit number [overflow_count-TH0-TL0] has the period!
- 	time = 1000*(overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK); //in ms
-
-  if ( (5 < time) && (time < 15) )
-  	instruction = 1;//stop
-  else if ( (15 < time) && (time < 25) )
-  	instruction = 2; //right
-  else if ( (25 < time) && (time < 35) )
-  	instruction = 3;//left
-  else if ( (35 < time )&& (time < 45) )
-  	instruction = 4;//forward
-  else if ( (45 < time) && (time < 55) )
-  	instruction = 5;//backwards
-  else if ( (55 < time) && (time < 65) )
-  	instruction = 6;//rotate
-  else
-  	instruction = 4;//forward
-
-}*/
-  
 //********************************//
 //	 	 Initialize ADC   		  //	
 //********************************//
@@ -386,21 +329,25 @@ void main (void)
 	InitPinADC(2,0); // Left Inductor
 	InitPinADC(2,1); // Center Inductor
 	InitADC(); // Initialize the ADC
+	Instructions[2]=0;
+	Instructions[1]=0;
+	Instructions[0]=0;
 	pulse_count = 0;
-	forward();
-	action = 2;
+	stop();
+
 	//main system run
 	while(1)
 	{
-		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
+		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
 		
-		if(decode_flag == 1)
+		if(decode_flag == 1) //if new instructions, decode and store into action
 		{
 			bin2dec();
 		}
-			printf("action=%u pulses=%u %u%u%u %1.3f %1.3f %u %u ",action,pulse_count,Instructions[2],Instructions[1],Instructions[0],V_ADC[0],V_ADC[1],pwmr,pwml);
+			
+		printf("action=%u pulses=%u %u%u%u  ",action,pulse_count,Instructions[2],Instructions[1],Instructions[0]);
 		if(Receive == 1)
 			printf("1\r");
 		else
@@ -408,13 +355,11 @@ void main (void)
 
 		maintain_d();
 
-		if(V_ADC[0] < 0.5 && V_ADC[1] < 0.5 && V_ADC[2] < 0.5) //if the car is off track, stop
+		if( (right && left && center && backright && backleft) == 0) //if the car is off track, stop
 			stop();
 		else
 		{
-
-		checkI_flag();
-
+			checkI_flag();
 			switch(action)
 			{
 				case 1:
@@ -454,10 +399,10 @@ void main (void)
 //********************************//
 void maintain_d (void)
 {
-	dright=V_ADC[0];
-	dleft=V_ADC[1];
+	dright = V_ADC[0];
+	dleft = V_ADC[1];
 
-	if (fabsf(dright-dleft) > 0.005)//Constant adjusts sensitivity
+	if (fabsf(dright-dleft) > sensitivity)//Constant adjusts sensitivity
 		if(dright > dleft)
 		{
 			pwmr = (unsigned char)(pwm_constant*fabsf(dleft/dright));
@@ -507,7 +452,7 @@ void turn_right(void)
 	pwmr = pwm_constant/2;
 	pwml = pwm_constant;
 	waitms(100);
-	while(fabsf(V_ADC[0]-V_ADC[1]) > 0.005)
+	while(fabsf(V_ADC[0]-V_ADC[1]) > sensitivity)
 	{
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
@@ -525,7 +470,7 @@ void turn_left(void)
 	pwml = pwm_constant/2;
 	pwmr = pwm_constant;
 	waitms(100);
-	while(fabsf(V_ADC[0]-V_ADC[1]) > 0.005)
+	while(fabsf(V_ADC[0]-V_ADC[1]) > sensitivity)
 	{
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
@@ -564,7 +509,7 @@ void rotate(void)
 	pwml = rotate_constant;
 	pwmr = rotate_constant;
 	waitms(100);
-	while(fabsf(V_ADC[0]-V_ADC[1]) > 0.005)
+	while(fabsf(V_ADC[0]-V_ADC[1]) > sensitivity)
 	{
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
@@ -585,3 +530,5 @@ void checkI_flag(void)
 		I_flag = 1;             //is greater than the perpendicular voltage
 	}
 }
+
+
