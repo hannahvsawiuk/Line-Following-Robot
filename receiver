@@ -18,6 +18,7 @@
 #define BAUDRATE  115200L   // Baud rate of UART in bps
 
 //	ADC Pins	// 
+#define comm_ADC  		LQFP32_MUX_P1_4
 #define backright_ADC 	LQFP32_MUX_P1_5
 #define backleft_ADC 	LQFP32_MUX_P1_6
 #define right_ADC 		LQFP32_MUX_P1_7
@@ -36,8 +37,6 @@
 #define OUT_R1 P2_5
 #define OUT_R0 P2_4
 
-#define Receive P1_1 // 0 or 1: depends on instruction
-
 //********************************//
 //	   Function Prototypes	      //	
 //********************************//
@@ -49,7 +48,8 @@ void rotate(void);
 void checkI_flag(void);
 void turn_left(void);
 void turn_right(void);
-void bin2dec (void);
+void UART1_Init (unsigned long);
+char getchar (void);
 
 //********************************//
 //	   	Volatile Variables		  //	note: type unsigned char or unsigned int only
@@ -62,16 +62,16 @@ volatile unsigned char direction = 1; //1=forward, 0 = backwards
 volatile unsigned char overflow_count = 0;
 volatile unsigned char I_flag = 0; //1 = intersection detected, 0 = no intersection detected
 volatile unsigned char pulse_count = 0;
-volatile unsigned char decode_flag = 1;
 
 		///	ADC	//
-volatile float V_ADC[5];
+volatile float V_ADC[6];
 volatile float dright = 0.0;
 volatile float dleft = 0.0;
 
 	//	Instructions //
-volatile unsigned char action = 1;//stop
-volatile unsigned char Instructions[3];
+volatile unsigned char action = 0; //stop
+volatile char c;
+volatile unsigned char uc;
 
 //********************************//
 //	   	Main Initializations	  //	
@@ -125,7 +125,7 @@ char _c51_external_startup (void)
 	P0MDOUT |= 0x10; // Enable UTX as push-pull output
 	XBR0     = 0x01; // Enable UART on P0.4(TX) and P0.5(RX)                     
 	XBR1     = 0x40; // Enable crossbar and weak pull-ups
-
+	XBR2     |=0b_0000_0001; //Rx = P0.1
 	// Initialize timer 2 for periodic interrupt//
 	TMR2CN=0x00;   // Stop Timer2; Clear TF2;
 	CKCON|=0b_0001_0000;
@@ -134,18 +134,44 @@ char _c51_external_startup (void)
 	ET2=1;         // Enable Timer2 interrupts
 	TR2=1;         // Start Timer2
 
-	//External INT1 and INT0 interrupt configuration
-	IT01CF|=0b_0001_1000; //(P0_1 for INT1 and P0_0 for INT0)->
-	TCON&=0b_1111_1101;
-	IT0 = 1;
-	EX0 = 1;
-
 	// Enable interrupts
 	EA=1;
 	
 	return 0;
 }
+//********************************//
+//	   	UART1 Initialization	  //	
+//********************************//
+void UART1_Init (unsigned long baudrate)
+{
+	SMOD1 = 0x0C; // no parity, 8 data bits, 1 stop bit
+	SCON1 = 0x10;
 
+	if (((SYSCLK/baudrate)/2L)/0xFFFFL < 1)
+	{
+		SBRL1 = 0x10000L-((SYSCLK/baudrate)/2L);
+		SBCON1 |= 0x03; // set prescaler to 1
+	}
+	else if (((SYSCLK/baudrate)/2L)/0xFFFFL < 4)
+	{
+		SBRL1 = 0x10000L-(((SYSCLK/baudrate)/2L)/4L);
+		SBCON1 &= ~0x03;
+		SBCON1 |= 0x01; // set prescaler to 4
+	}
+	else if (((SYSCLK/baudrate)/2)/0xFFFFL < 12)
+	{
+		SBRL1 = 0x10000L-(((SYSCLK/baudrate)/2L)/12L);
+		SBCON1 &= ~0x03; // set prescaler to 12
+	}
+	else
+	{
+		SBRL1 = 0x10000L-(((SYSCLK/baudrate)/2L)/48L);
+		SBCON1 &= ~0x03;
+		SBCON1 |= 0x02; // set prescaler to ?
+	}
+	SCON1 |= 0x02;    // indicate ready for TX
+	SBCON1 |= 0x40;   // enable baud rate generator
+}
 //********************************//
 //	   Timer 3 Configuration      //	
 //********************************//
@@ -187,45 +213,12 @@ void waitms (unsigned int ms)
 		Timer3us(250);
 	}
 }
-
-//********************************//
-//	 External interrupt (INT0)	  //	
-//********************************//
-void External_Interrupt (void) interrupt 0 //P0_1 as trigger
-{
-	//MSB first
-	//P0_7 = 1;
-	if((pulse_count+1)==1)
-	{
-		waitms(30);
-		//P0_7=0;
-		pulse_count++;
-		//This is the trigger
-	}
-	else if((pulse_count+1 > 1) && (pulse_count <=3))
-	{
-		decode_flag = 0; //don't decode instruction yet
-		waitms(80);
-		//P0_7 = 0;
-		Instructions[pulse_count-1] = Receive;
-		pulse_count++;	
-	}	
-	else
-	{	
-		waitms(80);
-		//P0_7=0;
-		pulse_count = 0;
-		decode_flag = 1; //decode and read instruction
-	}
-}
 //********************************//
 //	 	  Timer2 interrupt	  	  //	
 //********************************//
 void Timer2_ISR (void) interrupt 5
 {
 	TF2H = 0; // Clear Timer2 interrupt flag
-	
-	printf("ISR\n");
 	pwm_count++;
 	if(pwm_count > 100) 
 		pwm_count = 0;
@@ -273,6 +266,17 @@ void InitADC (void)
 	ADC0CF = 0xF8; // SAR clock = 31, Right-justified result
 	ADC0CN = 0b_1000_0000; // AD0EN=1, AD0TM=0
   	REF0CN = 0b_0000_1000; //Select VDD as the voltage reference for the converter
+}
+//********************************//
+//	   		Get Character 		  //	
+//********************************//
+char getchar (void)
+{
+	char c;
+	while(!(SCON1 & 0x01));
+	SCON1 &= ~0x01;
+	c = SBUF1;
+	return(c);
 }
 //********************************//
 //		 Initialize ADC Pins	  //	
@@ -333,16 +337,17 @@ float Volts_at_Pin(unsigned char pin)
 void main (void)
 {	
 	int i = 0;
-	int j = 0;
 	printf("main1\n");
+	InitPinADC(1,4); // Backright Inductor
 	InitPinADC(1,5); // Backright Inductor
 	InitPinADC(1,6); // Backleft inductor
 	InitPinADC(1,7); // Right inductor
 	InitPinADC(2,0); // Left Inductor
 	InitPinADC(2,1); // Center Inductor
 	InitADC(); // Initialize the ADC
-	for(i = 0; i < 3; i++)
-		Instructions[i]=0;
+
+	UART1_Init(110); //baud rate of 110
+
 	for(j = 0; j < 5; j++)
 		V_ADC[i]=0;
 	pulse_count = 0;
@@ -351,67 +356,60 @@ void main (void)
 	//main system run
 	while(1)
 	{
+		
 		printf("main\n");
+		c = getchar();
+		uc = (unsigned char)c;
+		action = uc;
+		printf("%c %u\n",c,action);
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
 		V_ADC[3]=Volts_at_Pin(backright_ADC); //Backright Inductor
 		V_ADC[4]=Volts_at_Pin(backleft_ADC); //Backleft Inductor
-		
-		if(decode_flag == 1) //if new instructions, decode and store into action
-			bin2dec();
-			//T2FH=0
+		V_ADC[5]=Volts_at_Pin(comm_ADC); //communication Inductor
 			
-		//printf("action=%u pulses=%u %u%u%u Vr=%1.2f Vl=%1.2f Vc=%1.2f Vrb=%1.2f Vlb=%1.2f",action,pulse_count,Instructions[0],Instructions[1],Instructions[2],V_ADC[0],V_ADC[1],V_ADC[2],V_ADC[3],V_ADC[4]);
 		printf("%u Vr=%1.2f Vl=%1.2f Vc=%1.2f Vrb=%1.2f Vlb=%1.2f\r",action,V_ADC[0],V_ADC[1],V_ADC[2],V_ADC[3],V_ADC[4]);
 
 		if (direction == 1 || direction == 0) //only maintain distance when going forward or backward
 			maintain_d();
 
-		if(( (V_ADC[0] < 0.045) && (V_ADC[1] < 0.044) && (V_ADC[3] < 0.045) && (V_ADC[4] < 0.045)) == 0) //if the car is off track, stop
+		if(( (V_ADC[0] < 0.045) && (V_ADC[1] < 0.044) && (V_ADC[3] < 0.045) && (V_ADC[4] < 0.045) && (V_ADC[5] < 0.045)) == 0) //if the car is off track, stop
 			stop();
 		
 		else
 		{
-			//checkI_flag();
+			checkI_flag();
 
-			if(action == 1)
+			if(action == )
 			{
 				stop();
-				break;
 			}
-			else if(action == 2)
+			else if(action == )
 			{
 				if(I_flag == 1)
 					turn_right();
-				break;
 			}
-			else if(action == 3)
+			else if(action == )
 			{	
 				if(I_flag == 1)
 					turn_left();
-				break;
 			}
-			else if(action == 4)
+			else if(action == )
 			{
-				printf("else if\n");
 				forward();
-				break;
 			}
-			else if(action == 5)
+			else if(action == )
 			{
 				backward();
-				break;
 			}
-			else if(action == 6)
+			else if(action == )
 			{
 				rotate();
-				break;
 			}
 			else
 			{
 				forward();
-				break;
 			}
 		}
 	}
@@ -453,15 +451,6 @@ void maintain_d (void)
 		pwml = pwm_constant;
 	}	
 }
-
-//********************************//
-//	 		  Bin2Dec   	 	  //	
-//********************************//
-void bin2dec (void)
-{
-	action = (unsigned char)((Instructions[2] + 2*Instructions[1] + 4*Instructions[0])-1);
-}
-
 //********************************//
 //	 	  	1:Stop    			  //	
 //********************************//
@@ -474,7 +463,6 @@ void stop (void)
 //***************************************//
 // 2:Turn right at the next intersection //	
 //***************************************//
-
 void turn_right(void)
 {	
 	//turn code
@@ -497,7 +485,6 @@ void turn_right(void)
 //***************************************//
 // 3:Turn left at the next intersection  //	
 //***************************************//
-
 void turn_left(void)
 {	
 	direction = 2;
@@ -512,27 +499,23 @@ void turn_left(void)
 	forward(); //go forward after
 
 }
-
 //********************************//
-//	 	  4:Forward       //	
+//	 	  4:Forward       		  //	
 //********************************//
 void forward(void)
 {	
-	printf("forward\n");
 	direction = 1;//forward
 	pwml = pwm_constant;
 	pwmr = pwm_constant;
 }
-
 //********************************//
-//	 	  5:Backward      //	
+//	 	  5:Backward      		  //	
 //********************************//
 void backward(void)
 {	
 	direction = 0;//backward
 	pwml = pwm_constant;
 	pwmr = pwm_constant;
-	//maintain_d();
 }
 
 //********************************//
@@ -560,8 +543,8 @@ void checkI_flag(void)
 
 	I_flag = 0; //Default. Not at intersection
 
-	if(V_ADC[2] > Ithresh_voltage){
-		//waitms(100);		 //Check if the voltage read by the third inductor
+	if(V_ADC[2] >= Ithresh_voltage)
+	{
 		I_flag = 1;             //is greater than the perpendicular voltage
 	}
 }
