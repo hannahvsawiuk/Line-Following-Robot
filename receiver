@@ -16,18 +16,13 @@
 //********************************//
 #define SYSCLK    48000000L // SYSCLK frequency in Hz
 #define BAUDRATE  115200L   // Baud rate of UART in bps
-//	Digital Pins	// 
-#define right 		P0_2 	
-#define left 		P0_3
-#define backright 	P0_4
-#define backleft 	P0_5
-//	ADC Pins	// 
-#define right_ADC 		LQFP32_MUX_P1_6
-#define left_ADC    	LQFP32_MUX_P1_7
-#define center_ADC  	LQFP32_MUX_P2_0
-#define backright_ADC 	LQFP32_MUX_P2_1
-#define backleft_ADC 	LQFP32_MUX_P2_6
 
+//	ADC Pins	// 
+#define backright_ADC 	LQFP32_MUX_P1_5
+#define backleft_ADC 	LQFP32_MUX_P1_6
+#define right_ADC 		LQFP32_MUX_P1_7
+#define left_ADC    	LQFP32_MUX_P2_0
+#define center_ADC  	LQFP32_MUX_P2_1
 
 //	General Constants	//
 #define pwm_constant	30 //Base PWM value
@@ -198,12 +193,12 @@ void waitms (unsigned int ms)
 //********************************//
 void External_Interrupt (void) interrupt 0 //P0_1 as trigger
 {
-	//LSB first
-	P0_7 = 1;
+	//MSB first
+	//P0_7 = 1;
 	if((pulse_count+1)==1)
 	{
 		waitms(30);
-		P0_7=0;
+		//P0_7=0;
 		pulse_count++;
 		//This is the trigger
 	}
@@ -211,14 +206,14 @@ void External_Interrupt (void) interrupt 0 //P0_1 as trigger
 	{
 		decode_flag = 0; //don't decode instruction yet
 		waitms(80);
-		P0_7 = 0;
+		//P0_7 = 0;
 		Instructions[pulse_count-1] = Receive;
 		pulse_count++;	
 	}	
 	else
 	{	
 		waitms(80);
-		P0_7=0;
+		//P0_7=0;
 		pulse_count = 0;
 		decode_flag = 1; //decode and read instruction
 	}
@@ -230,6 +225,7 @@ void Timer2_ISR (void) interrupt 5
 {
 	TF2H = 0; // Clear Timer2 interrupt flag
 	
+	printf("ISR\n");
 	pwm_count++;
 	if(pwm_count > 100) 
 		pwm_count = 0;
@@ -338,11 +334,12 @@ void main (void)
 {	
 	int i = 0;
 	int j = 0;
-	InitPinADC(1,6); // Right inductor
-	InitPinADC(1,7); // Left inductor
-	InitPinADC(2,0); // Center Inductor
-	InitPinADC(2,1); // Backright Inductor
-	InitPinADC(2,6); // Backleft Inductor
+	printf("main1\n");
+	InitPinADC(1,5); // Backright Inductor
+	InitPinADC(1,6); // Backleft inductor
+	InitPinADC(1,7); // Right inductor
+	InitPinADC(2,0); // Left Inductor
+	InitPinADC(2,1); // Center Inductor
 	InitADC(); // Initialize the ADC
 	for(i = 0; i < 3; i++)
 		Instructions[i]=0;
@@ -354,60 +351,67 @@ void main (void)
 	//main system run
 	while(1)
 	{
+		printf("main\n");
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
-		V_ADC[3]=Volts_at_Pin(backright_ADC); //Right Inductor
-		V_ADC[4]=Volts_at_Pin(backleft_ADC); //Left Inductor
+		V_ADC[3]=Volts_at_Pin(backright_ADC); //Backright Inductor
+		V_ADC[4]=Volts_at_Pin(backleft_ADC); //Backleft Inductor
 		
 		if(decode_flag == 1) //if new instructions, decode and store into action
 			bin2dec();
 			//T2FH=0
 			
-		printf("action=%u pulses=%u %u%u%u  ",action,pulse_count,Instructions[0],Instructions[1],Instructions[2]);
-		if(Receive == 1)
-			printf("1\r");
-		else
-			printf("0\r");
+		//printf("action=%u pulses=%u %u%u%u Vr=%1.2f Vl=%1.2f Vc=%1.2f Vrb=%1.2f Vlb=%1.2f",action,pulse_count,Instructions[0],Instructions[1],Instructions[2],V_ADC[0],V_ADC[1],V_ADC[2],V_ADC[3],V_ADC[4]);
+		printf("%u Vr=%1.2f Vl=%1.2f Vc=%1.2f Vrb=%1.2f Vlb=%1.2f\r",action,V_ADC[0],V_ADC[1],V_ADC[2],V_ADC[3],V_ADC[4]);
 
 		if (direction == 1 || direction == 0) //only maintain distance when going forward or backward
 			maintain_d();
 
-		if( (right && left && backright && backleft) == 0) //if the car is off track, stop
+		if(( (V_ADC[0] < 0.045) && (V_ADC[1] < 0.044) && (V_ADC[3] < 0.045) && (V_ADC[4] < 0.045)) == 0) //if the car is off track, stop
 			stop();
 		
 		else
 		{
-			checkI_flag();
-			switch(action)
+			//checkI_flag();
+
+			if(action == 1)
 			{
-				case 1:
-					stop();
-					break;
-				case 2:
-					if(I_flag==1)
-					{
-						turn_right();
-					}
-					break;
-				case 3:
-					if(I_flag==1)
-					{
-						turn_left();
-					}
-					break;
-				case 4:
-					forward();
-					break;
-				case 5:
-					backward();
-					break;
-				case 6:
-					rotate();
-					break;
-				default:
-					forward();
-					break;
+				stop();
+				break;
+			}
+			else if(action == 2)
+			{
+				if(I_flag == 1)
+					turn_right();
+				break;
+			}
+			else if(action == 3)
+			{	
+				if(I_flag == 1)
+					turn_left();
+				break;
+			}
+			else if(action == 4)
+			{
+				printf("else if\n");
+				forward();
+				break;
+			}
+			else if(action == 5)
+			{
+				backward();
+				break;
+			}
+			else if(action == 6)
+			{
+				rotate();
+				break;
+			}
+			else
+			{
+				forward();
+				break;
 			}
 		}
 	}
@@ -418,6 +422,7 @@ void main (void)
 //********************************//
 void maintain_d (void)
 {
+	printf("maintain\n");
 	if (direction == 1) //forwards
 	{
 		dright = V_ADC[0]; //right 
@@ -445,7 +450,7 @@ void maintain_d (void)
 	else
 	{
 		pwmr = pwm_constant;
-		pwml =  pwm_constant;
+		pwml = pwm_constant;
 	}	
 }
 
@@ -513,6 +518,7 @@ void turn_left(void)
 //********************************//
 void forward(void)
 {	
+	printf("forward\n");
 	direction = 1;//forward
 	pwml = pwm_constant;
 	pwmr = pwm_constant;
@@ -535,7 +541,7 @@ void backward(void)
 void rotate(void)
 {
 	direction = 2;
-	pwml = rotate_constant;
+	pwml = rotate_constant; 
 	pwmr = rotate_constant;
 	waitms(100);
 	while(fabsf(V_ADC[0]-V_ADC[1]) > sensitivity)
@@ -555,7 +561,7 @@ void checkI_flag(void)
 	I_flag = 0; //Default. Not at intersection
 
 	if(V_ADC[2] > Ithresh_voltage){
-		waitms(100);		 //Check if the voltage read by the third inductor
+		//waitms(100);		 //Check if the voltage read by the third inductor
 		I_flag = 1;             //is greater than the perpendicular voltage
 	}
 }
