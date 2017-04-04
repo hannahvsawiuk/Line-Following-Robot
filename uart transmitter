@@ -172,16 +172,7 @@ int main (void)
 			interrupt_flag = 1;
 			_delay_ms(delay);
 			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);//12
+			_delay_ms(delay);//3
 			PORTB = 0b00000000;
 			interrupt_flag=0;
 			
@@ -197,7 +188,12 @@ int main (void)
 			PORTC &= (~C1); // Turn right yellow ON
 			
 			interrupt_flag = 1;
-			_delay_ms(delay);//4
+			_delay_ms(delay);//9
+			_delay_ms(delay);
+			_delay_ms(delay);
+			_delay_ms(delay);
+			_delay_ms(delay);
+			_delay_ms(delay);
 			_delay_ms(delay);
 			_delay_ms(delay);
 			_delay_ms(delay);
@@ -215,7 +211,9 @@ int main (void)
 			PORTC &= (~C2); // Turn left yellow on
 			
 			interrupt_flag = 1;
-			_delay_ms(delay);//6
+			_delay_ms(delay);//8
+			_delay_ms(delay);
+			_delay_ms(delay);
 			_delay_ms(delay);
 			_delay_ms(delay);
 			_delay_ms(delay);
@@ -223,6 +221,7 @@ int main (void)
 			_delay_ms(delay);
 			PORTB = 0b00000000;
 			interrupt_flag=0;
+			}
 
 		else if(strcmp(ps,"3") == 1){ // 4. Forward
 			PORTC |= C0;
@@ -235,8 +234,7 @@ int main (void)
 			PORTC &= (~C3); // Turns Green ON
 
 			interrupt_flag = 1;
-			_delay_ms(delay);//8
-			_delay_ms(delay);
+			_delay_ms(delay);//7
 			_delay_ms(delay);
 			_delay_ms(delay);
 			_delay_ms(delay);
@@ -259,11 +257,7 @@ int main (void)
 			PORTC &= (~C4); // Turns RGB Red ON
 			
 			interrupt_flag = 1;
-			_delay_ms(delay);//10
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
-			_delay_ms(delay);
+			_delay_ms(delay);//6
 			_delay_ms(delay);
 			_delay_ms(delay);
 			_delay_ms(delay);
@@ -285,7 +279,10 @@ int main (void)
 			
 			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag = 1;
-			_delay_ms(delay);//2
+			_delay_ms(delay);//5
+			_delay_ms(delay);
+			_delay_ms(delay);
+			_delay_ms(delay);
 			_delay_ms(delay);
 			PORTB = 0b00000000;
 			interrupt_flag=0;
