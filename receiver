@@ -23,9 +23,8 @@
 #define center_ADC  LQFP32_MUX_P2_1
 //	Base PWM value	//
 #define pwm_constant	30
-
-//Intersection Threshold Value
-#define Ithresh_voltage 2
+#define rotate_constant 45
+#define Ithresh_voltage 1.5
 
 //	MOSFET Pins	//
 #define OUT_L1 P2_2
@@ -42,7 +41,10 @@ void maintain_d (void);
 void stop (void);
 void forward (void);
 void backward (void);
+void rotate(void);
 void checkI_flag(void);
+void turn_left(void);
+void turn_right(void);
 void bin2dec (void);
 
 //********************************//
@@ -128,11 +130,11 @@ char _c51_external_startup (void)
 	ET2=1;         // Enable Timer2 interrupts
 	TR2=1;         // Start Timer2
 
-	//External INT0 interrupts
-	IT01CF|=0b_0001_1000; //(P0_1 for INT1 and P0_0 for INT0)->
+	//External INTO interrupts
+	/*IT01CF|=0b_0001_0000; //(P0_1 for INT1 and P0_0 for INT0)->
 	TCON&=0b_1111_1101;
-	IT0 = 1;//input active high
-	EX0 = 1;
+	IT0= 1;
+	EX0 = 1;*/
 
 	EA=1; // Enable interrupts
 	
@@ -180,6 +182,7 @@ void waitms (unsigned int ms)
 		Timer3us(250);
 	}
 }
+
 //********************************//
 //	 	  External interrupt	  //	
 //********************************//
@@ -204,37 +207,8 @@ void External_Interrupt (void) interrupt 0
 		pulse_count = 0;
 	}
 }
-/*
-	if(pulse_count == 0)
-		pulse_count++;
-	else if(pulse_count == 1)
-	{			
-		waitms(500);
-		pulse_count++;
-		if(Receive == 1)
-			Instructions[0] = 1;
-		else
-			Instructions[0] = 0;
-	}
-	else if(pulse_count == 2)
-	{			
-		waitms(255);
-		pulse_count++;
-		if(Receive == 1)
-			Instructions[1] = 1;
-		else
-			Instructions[1] = 0;
-	}
-	else if(pulse_count == 3)
-	{			
-		pulse_count = 0;
-		waitms(255);
-		if(Receive == 1)
-			Instructions[2] = 1;
-		else
-			Instructions[2] = 0;
-	}
-}*/
+
+
 //********************************//
 //	 	  Timer2 interrupt	  	  //	
 //********************************//
@@ -254,7 +228,7 @@ void Timer2_ISR (void) interrupt 5
 		OUT_L0 = 0;
 		OUT_L1 = pwm_count > (100-pwml)?1:0;
 	}
-	else//backward
+	else if(direction == 0)//backward
 	{		
 		OUT_R0 = pwm_count > (100-pwmr)?1:0;
 		OUT_R1 = 0;
@@ -262,7 +236,78 @@ void Timer2_ISR (void) interrupt 5
 		OUT_L0 = pwm_count > (100-pwml)?1:0;
 		OUT_L1 = 0;
 	}
+	else if(direction == 2) {	//Left wheel forward, right wheel backwards
+	
+		OUT_R0 = pwm_count > (100-pwmr)?1:0;
+		OUT_R1 = 0;
+		
+		OUT_L0 = 0;
+		OUT_L1 = pwm_count > (100-pwml)?1:0;
+	}
+	
+	else {	//Right wheel forward, left wheel backwards
+	
+		OUT_R0 = 0;
+		OUT_R1 = pwm_count > (100-pwmr)?1:0;
+		
+		OUT_L0 = pwm_count > (100-pwml)?1:0;
+		OUT_L1 = 0;
+	}
+		
 }
+//********************************//
+//	 	 UART0 Interrupt 	 	  //	
+//********************************//
+/*void UART0_ISR (void) interrupt 4
+{
+	RI0 = 0;//clear UART0 interrupt flag
+	
+	TL0 = 0; 
+	TH0 = 0;
+	TF0 = 0;
+	overflow_count = 0;
+
+	while(V_ADC[0] < 0.5);
+	//while(Rx != 1); // Wait for the signal to be one
+	TR0 = 1; // Start the timer
+	//while(Rx != 0) // Wait for the signal to be zero
+	while(V_ADC[0] > 0.5)
+	{
+		if(TF0 == 1) // Did the 16-bit timer overflow?
+		{
+			TF0 = 0;
+			overflow_count++;
+		}
+	}
+	//while(Rx != 1) // Wait for the signal to be one
+	while(V_ADC[0] < 0.5)
+	{ 
+		if(TF0 == 1) // Did the 16 -bit timer overflow?
+		{
+			TF0 = 0;
+			overflow_count++;
+		}
+	}
+	TR0 = 0; // Stop timer 0, the 24-bit number [overflow_count-TH0-TL0] has the period!
+ 	time = 1000*(overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK); //in ms
+
+  if ( (5 < time) && (time < 15) )
+  	instruction = 1;//stop
+  else if ( (15 < time) && (time < 25) )
+  	instruction = 2; //right
+  else if ( (25 < time) && (time < 35) )
+  	instruction = 3;//left
+  else if ( (35 < time )&& (time < 45) )
+  	instruction = 4;//forward
+  else if ( (45 < time) && (time < 55) )
+  	instruction = 5;//backwards
+  else if ( (55 < time) && (time < 65) )
+  	instruction = 6;//rotate
+  else
+  	instruction = 4;//forward
+
+}*/
+  
 //********************************//
 //	 	 Initialize ADC   		  //	
 //********************************//
@@ -331,76 +376,70 @@ float Volts_at_Pin(unsigned char pin)
 //********************************//
 void main (void)
 {	
-	
 	InitPinADC(1,7); // Right inductor
 	InitPinADC(2,0); // Left Inductor
 	InitPinADC(2,1); // Center Inductor
 	InitADC(); // Initialize the ADC
-	Instructions[0] = 0;
-	Instructions[1] = 0;
-	Instructions[2] = 0;
-	bin2dec();
 	pulse_count = 0;
-	
+	forward();
+	action = 2;
 	//main system run
 	while(1)
 	{
-		//precision peak detector
-		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor
+		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
-	
-		maintain_d();
+		
 		if(decode_flag == 1)
+		{
 			bin2dec();
-		printf("action=%u pulses=%u %u%u%u %1.3f %1.3f %u %u ",action,pulse_count,Instructions[2],Instructions[1],Instructions[0],V_ADC[0],V_ADC[1],pwmr,pwml);
+		}
+			printf("action=%u pulses=%u %u%u%u %1.3f %1.3f %u %u ",action,pulse_count,Instructions[2],Instructions[1],Instructions[0],V_ADC[0],V_ADC[1],pwmr,pwml);
 		if(Receive == 1)
 			printf("1\r");
 		else
 			printf("0\r");
- 	
-		//checkI_flag();
 
-		/*if(V_ADC[0] < 0.05 && V_ADC[1] < 0.05 && V_ADC[2] < 0.05) //if the car is off track, stop
-			stop();
-		else if(I_flag == 1)
+		maintain_d();
+
+		if(V_ADC[0] < 0.5 && V_ADC[1] < 0.5 && V_ADC[2] < 0.5) //if the car is off track, stop
 			stop();
 		else
-			forward();
-		
-		//checkI_flag();*/
-
-
-		/*switch(action)
 		{
-			case 1:
-				stop();
-				break;
-			case 2:
-				if(I_flag==1)
-				{
-					turn_right();
-				}
-				break;
-			case 3:
-				if(I_flag==1)
-				{
-					turn_left();
-				}
-				break;
-			case 4:
-				forward();
-				break;
-			case 5:
-				backward();
-				break;
-			case 6:
-				rotate();
-				break;
-			default:
-				forward();
-				break;
-		}*/
+
+		checkI_flag();
+
+			switch(action)
+			{
+				case 1:
+					stop();
+					break;
+				case 2:
+					if(I_flag==1)
+					{
+						turn_right();
+					}
+					break;
+				case 3:
+					if(I_flag==1)
+					{
+						turn_left();
+					}
+					break;
+				case 4:
+					forward();
+					break;
+				case 5:
+					backward();
+					break;
+				case 6:
+					rotate();
+					break;
+				default:
+					forward();
+					break;
+			}
+		}
 	}
 }
 
@@ -429,6 +468,7 @@ void maintain_d (void)
 		pwml =  pwm_constant;
 	}	
 }
+
 //********************************//
 //	 		  Bin2Dec   	 	  //	
 //********************************//
@@ -449,34 +489,53 @@ void stop (void)
 //***************************************//
 // 2:Turn right at the next intersection //	
 //***************************************//
-/*
+
 void turn_right(void)
 {	
+	//turn code
+	//delay for short time
+	//keep turning while checking voltages until fairly centered
+	//then follow the wire
 	
-	pwmr = 0;
+	direction = 3;
+	pwmr = pwm_constant/2;
 	pwml = pwm_constant;
-
+	waitms(100);
+	while(fabsf(V_ADC[0]-V_ADC[1]) > 0.005)
+	{
+		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
+		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
+	}
+	forward(); //go forward after
 }
-*/
+
 //***************************************//
 // 3:Turn left at the next intersection  //	
 //***************************************//
-/*
+
 void turn_left(void)
 {	
-
-	pwml = 0;
+	direction = 2;
+	pwml = pwm_constant/2;
 	pwmr = pwm_constant;
+	waitms(100);
+	while(fabsf(V_ADC[0]-V_ADC[1]) > 0.005)
+	{
+		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
+		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
+	}
+	forward(); //go forward after
 
 }
-*/
+
 //********************************//
 //	 	  4:Forward       //	
 //********************************//
 void forward(void)
 {	
 	direction = 1;//forward
-	maintain_d();
+	pwml = pwm_constant;
+	pwmr = pwm_constant;
 }
 
 //********************************//
@@ -485,31 +544,38 @@ void forward(void)
 void backward(void)
 {	
 	direction = 0;//backward
-	maintain_d();
+	pwml = pwm_constant;
+	pwmr = pwm_constant;
+	//maintain_d();
 }
 
 //********************************//
 //	 	  6:Rotate        //	
 //********************************//
-/*void rotate(void)
+void rotate(void)
 {
-`
-	pwml = 0;
-	pwmr = pwm_constant;
-	waitms (time_constant); //a constant we will hardcode after trial and error
-	
-}*/
+	direction = 2;
+	pwml = rotate_constant;
+	pwmr = rotate_constant;
+	waitms(100);
+	while(fabsf(V_ADC[0]-V_ADC[1]) > 0.005)
+	{
+		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor -> negative input of the peak detector
+		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
+	}
+	forward(); //go forward after	
+}
 
 //********************************//
 //	 Check Intersection Flag      //
 //********************************//
 void checkI_flag(void)
 {
+
 	I_flag = 0; //Default. Not at intersection
 
-	if(V_ADC[2] > Ithresh_voltage){ //Check if the voltage read by the third inductor
+	if(V_ADC[2] > Ithresh_voltage){
+		waitms(100);		 //Check if the voltage read by the third inductor
 		I_flag = 1;             //is greater than the perpendicular voltage
 	}
 }
- 
-
