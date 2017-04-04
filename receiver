@@ -19,13 +19,16 @@
 //	Digital Pins	// 
 #define right 		P0_2 	
 #define left 		P0_3
-#define center 		P0_4
-#define backright 	P0_5
-#define backleft 	P0_6
+#define backright 	P0_4
+#define backleft 	P0_5
 //	ADC Pins	// 
-#define right_ADC 	LQFP32_MUX_P1_7
-#define left_ADC    LQFP32_MUX_P2_0
-#define center_ADC  LQFP32_MUX_P2_1
+#define right_ADC 		LQFP32_MUX_P1_6
+#define left_ADC    	LQFP32_MUX_P1_7
+#define center_ADC  	LQFP32_MUX_P2_0
+#define backright_ADC 	LQFP32_MUX_P2_1
+#define backleft_ADC 	LQFP32_MUX_P2_6
+
+
 //	General Constants	//
 #define pwm_constant	30 //Base PWM value
 #define rotate_constant 45 //Rotate PWM value
@@ -67,7 +70,7 @@ volatile unsigned char pulse_count = 0;
 volatile unsigned char decode_flag = 1;
 
 		///	ADC	//
-volatile float V_ADC[3];
+volatile float V_ADC[5];
 volatile float dright = 0.0;
 volatile float dleft = 0.0;
 
@@ -193,7 +196,7 @@ void waitms (unsigned int ms)
 //********************************//
 //	 External interrupt (INT0)	  //	
 //********************************//
-void External_Interrupt (void) interrupt 0 //P0_0 as trigger
+void External_Interrupt (void) interrupt 0 //P0_1 as trigger
 {
 	//LSB first
 	P0_7 = 1;
@@ -333,13 +336,18 @@ float Volts_at_Pin(unsigned char pin)
 //********************************//
 void main (void)
 {	
-	InitPinADC(1,7); // Right inductor
-	InitPinADC(2,0); // Left Inductor
-	InitPinADC(2,1); // Center Inductor
+	int i = 0;
+	int j = 0;
+	InitPinADC(1,6); // Right inductor
+	InitPinADC(1,7); // Left inductor
+	InitPinADC(2,0); // Center Inductor
+	InitPinADC(2,1); // Backright Inductor
+	InitPinADC(2,6); // Backleft Inductor
 	InitADC(); // Initialize the ADC
-	Instructions[2]=0;
-	Instructions[1]=0;
-	Instructions[0]=0;
+	for(i = 0; i < 3; i++)
+		Instructions[i]=0;
+	for(j = 0; j < 5; j++)
+		V_ADC[i]=0;
 	pulse_count = 0;
 	stop();
 
@@ -349,11 +357,12 @@ void main (void)
 		V_ADC[0]=Volts_at_Pin(right_ADC); //Right Inductor
 		V_ADC[1]=Volts_at_Pin(left_ADC); //Left Inductor
 		V_ADC[2]=Volts_at_Pin(center_ADC); //Center Inductor
+		V_ADC[3]=Volts_at_Pin(backright_ADC); //Right Inductor
+		V_ADC[4]=Volts_at_Pin(backleft_ADC); //Left Inductor
 		
 		if(decode_flag == 1) //if new instructions, decode and store into action
-		{
 			bin2dec();
-		}
+			//T2FH=0
 			
 		printf("action=%u pulses=%u %u%u%u  ",action,pulse_count,Instructions[0],Instructions[1],Instructions[2]);
 		if(Receive == 1)
@@ -361,10 +370,12 @@ void main (void)
 		else
 			printf("0\r");
 
-		maintain_d();
+		if (direction == 1 || direction == 0) //only maintain distance when going forward or backward
+			maintain_d();
 
-		if( (right && left && center && backright && backleft) == 0) //if the car is off track, stop
+		if( (right && left && backright && backleft) == 0) //if the car is off track, stop
 			stop();
+		
 		else
 		{
 			checkI_flag();
@@ -407,10 +418,19 @@ void main (void)
 //********************************//
 void maintain_d (void)
 {
-	dright = V_ADC[0];
-	dleft = V_ADC[1];
+	if (direction == 1) //forwards
+	{
+		dright = V_ADC[0]; //right 
+		dleft = V_ADC[1]; //left
+	}
+	else if (direction == 0)
+	{
+		dright = V_ADC[4]; //backleft (inverse logic)
+		dleft = V_ADC[3]; //backright
+	}
 
 	if (fabsf(dright-dleft) > sensitivity)//Constant adjusts sensitivity
+	{
 		if(dright > dleft)
 		{
 			pwmr = (unsigned char)(pwm_constant*fabsf(dleft/dright));
@@ -421,6 +441,7 @@ void maintain_d (void)
 			pwml = (unsigned char)(pwm_constant*fabsf(dright/dleft));
 			pwmr = pwm_constant;
 		}
+	}
 	else
 	{
 		pwmr = pwm_constant;
@@ -509,7 +530,7 @@ void backward(void)
 }
 
 //********************************//
-//	 	  6:Rotate        //	
+//	 	  6:Rotate        		  //	
 //********************************//
 void rotate(void)
 {
