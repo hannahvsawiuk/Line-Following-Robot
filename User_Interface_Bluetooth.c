@@ -159,21 +159,42 @@ int main (void)
 			PORTC |= C4;
 			PORTC &= (~C5);
 			
-			PORTC &= (~C3); // Turns Green ON
+			PORTC &= (~C0); // Turns Red ON
+			PORTC &= (~C1); // Turns Yellow R ON
+			PORTC &= (~C2); // Turns Yellow L ON
+			PORTC &= (~C4); // Turns Red RGB ON
+			PORTC |= C5;    // Turns Green RGB ON
 			
 			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			interrupt_flag=0;
-			_delay_ms(33);
-			
-			//Signal: 110
+			_delay_ms(75);
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			interrupt_flag=0;
-			_delay_ms(67);
+			_delay_ms(75);
+			
+			//Signal: 111
 			interrupt_flag=0;
-			_delay_ms(67);
+			_delay_ms(80);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(80);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(80);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(80);
 			
 			//Turns wave ON after signal transmission
 			interrupt_flag=0;
@@ -190,17 +211,34 @@ int main (void)
 			
 			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			interrupt_flag=0;
-			_delay_ms(33);
+			_delay_ms(75);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			
-			//Signal: 010
-			interrupt_flag=1;
-			_delay_ms(67);
+			//Signal: 011
 			interrupt_flag=0;
-			_delay_ms(67);
+			_delay_ms(30);
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(90);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(110);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(110);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			
+			
+			
+
 			
 			//Turns wave ON after signal transmission
 			interrupt_flag=0;
@@ -217,17 +255,33 @@ int main (void)
 			
 			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			interrupt_flag=0;
-			_delay_ms(33);
-			
-			//Signal: 011
-			interrupt_flag=0;
-			_delay_ms(67);
-			interrupt_flag=0;
-			_delay_ms(67);
+			_delay_ms(75);
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			
+			
+			//Signal: 100
+			interrupt_flag=0;
+			_delay_ms(100);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(30);
+			interrupt_flag=1;
+			_delay_ms(100);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(30);
+			interrupt_flag=1;
+			_delay_ms(100);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(50);
 			
 			//Turns wave ON after signal transmission
 			interrupt_flag=0;
@@ -244,17 +298,33 @@ int main (void)
 			
 			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			interrupt_flag=0;
-			_delay_ms(33);
+			_delay_ms(75);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			
-			//Signal: 100
-			interrupt_flag=1;
-			_delay_ms(67);
-			interrupt_flag=1;
-			_delay_ms(67);
+			//Signal: 101
 			interrupt_flag=0;
-			_delay_ms(67);
+			_delay_ms(100);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(30);
+			interrupt_flag=1;
+			_delay_ms(100);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(100);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(50);
+			
 			
 			//Turns wave ON after signal transmission
 			interrupt_flag=0;
@@ -272,17 +342,32 @@ int main (void)
 			
 			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			interrupt_flag=0;
-			_delay_ms(33);
-			
-			//Signal: 101
-			interrupt_flag=0;
-			_delay_ms(67);
+			_delay_ms(75);
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			
+			//Signal: 110
 			interrupt_flag=0;
-			_delay_ms(67);
+			_delay_ms(100);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(100);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(30);
+			interrupt_flag=1;
+			_delay_ms(80);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(50);
 			
 			//Turns wave ON after signal transmission
 			interrupt_flag=0;
@@ -296,20 +381,36 @@ int main (void)
 			PORTC &= (~C5);
 			
 			PORTC &= (~C0); //Turn red ON
+			PORTC &= (~C4); // Turns Red RGB ON
 			
 			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			interrupt_flag=0;
-			_delay_ms(33);
+			_delay_ms(75);
+			interrupt_flag=1;
+			_delay_ms(50);
+			PORTB = 0b00000000;
 			
-			//Signal: 001
+			//Signal: 010
 			interrupt_flag=0;
-			_delay_ms(67);
+			_delay_ms(30);
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(80);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(100);
 			interrupt_flag=1;
-			_delay_ms(67);
+			_delay_ms(50);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(30);
+			interrupt_flag=1;
+			_delay_ms(80);
+			PORTB = 0b00000000;
+			interrupt_flag=0;
+			_delay_ms(50);
 			
 			//Turns wave ON after signal transmission
 			interrupt_flag=0;
