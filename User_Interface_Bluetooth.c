@@ -1,5 +1,4 @@
-/*This file contains the User Interface implementations for the Magnetic
-  Field Track Robot controller*/
+/*This file contains the implementations for the Magnetic Field Track Robot controller emitter*/
 
 #define F_CPU 16000000UL
 #include <avr/io.h>
@@ -11,7 +10,6 @@
 
 
 unsigned volatile int cnt = 0;
-//unsigned volatile int pwm = 2;
 
 unsigned volatile int ModifyTimerLow = 19972; //2013 for 10khz, 19972 for 15khz
 unsigned volatile int ModifyTimerHigh = 65534;
@@ -66,6 +64,8 @@ ISR(TIMER1_OVF_vect)
 //        UART Functions       //
 //                             //
 /////////////////////////////////
+
+//Functions taken from the AVR examples of the course portal
 
 void initUART(void)
 {
@@ -149,7 +149,7 @@ int main (void)
 
 	while (1) {
 		
-		ps=readString();
+		ps=readString(); //Reads string from bluetooth module through the UART
 		
 		if(strcmp(ps,"0") == 1){ // 1. Rotate 180°
 			PORTC |= C0;
@@ -165,7 +165,7 @@ int main (void)
 			PORTC &= (~C4); // Turns Red RGB ON
 			PORTC |= C5;    // Turns Green RGB ON
 			
-			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
+			//Trigger signal: 
 			interrupt_flag=1;
 			_delay_ms(50);
 			PORTB = 0b00000000;
@@ -209,7 +209,7 @@ int main (void)
 			
 			PORTC &= (~C1); // Turn right yellow ON
 			
-			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
+			//Trigger signal: 
 			interrupt_flag=1;
 			_delay_ms(50);
 			PORTB = 0b00000000;
@@ -253,7 +253,7 @@ int main (void)
 			
 			PORTC &= (~C2); // Turn left yellow on
 			
-			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
+			//Trigger signal: 
 			interrupt_flag=1;
 			_delay_ms(50);
 			PORTB = 0b00000000;
@@ -296,7 +296,7 @@ int main (void)
 			
 			PORTC &= (~C3); // Turns Green ON
 			
-			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
+			//Trigger signal: 
 			interrupt_flag=1;
 			_delay_ms(50);
 			PORTB = 0b00000000;
@@ -340,7 +340,7 @@ int main (void)
 			PORTC &= (~C3); // Turns Green ON
 			PORTC &= (~C4); // Turns RGB Red ON
 			
-			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
+			//Trigger signal: 
 			interrupt_flag=1;
 			_delay_ms(50);
 			PORTB = 0b00000000;
@@ -383,7 +383,7 @@ int main (void)
 			PORTC &= (~C0); //Turn red ON
 			PORTC &= (~C4); // Turns Red RGB ON
 			
-			//Trigger signal: Goes OFF for 67 ms and ON for 33 ms
+			//Trigger signal: 
 			interrupt_flag=1;
 			_delay_ms(50);
 			PORTB = 0b00000000;
