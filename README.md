@@ -21,4 +21,4 @@ The instructions were sent in five portions: start of instruction indicator, thr
 
 As a bonus feature, an android app was created using the MIT app creator. The app interfaced with a Bluetooth module (HC-06) which was connected to the transmission system. The app allowed for touch selection of instructions, but voice activated controls as well.
 
-[opto-isolator] (https://www.google.ca/url?sa=i&rct=j&q=&esrc=s&source=images&cd=&cad=rja&uact=8&ved=0ahUKEwjp1_m889fTAhUV-mMKHR_DBy0QjRwIBw&url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FOpto-isolator&psig=AFQjCNF7fRjmIQ5cj6H0rmmo2zJxMrbTuQ&ust=1494044446458314)
+[opto-isolator](https://en.wikipedia.org/wiki/Opto-isolator)
