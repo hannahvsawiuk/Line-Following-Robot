@@ -9,7 +9,7 @@
 
 *IDE:* CrossIDE
 
-*Microcontrollers:*  8051 F38x for the car and AVR ATmega328p for the transmitter
+*Microcontrollers:*  C8051F38x for the car and AVR ATmega328p for the transmitter
 
 *Electronic components:* DC motors, optoisolator, MOSFETS, tank circuits (sensors), operational amplifiers, comparators, precision peak detectors, the HC-06 Bluetooth module
 
