@@ -13,7 +13,7 @@
 
 *Electronic components:* DC motors, [opto-isolator](https://en.wikipedia.org/wiki/Opto-isolator), [MOSFETS](http://www.electronics-tutorials.ws/transistor/tran_6.html), [tank circuits](https://www.youtube.com/watch?v=fQ4yRVEzXQA), operational amplifiers, comparators, [precision peak detectors](https://www.google.ca/url?sa=i&rct=j&q=&esrc=s&source=images&cd=&cad=rja&uact=8&ved=0ahUKEwjf5dLO9tfTAhUX3GMKHRu5BOcQjRwIBw&url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FPrecision_rectifier&psig=AFQjCNGRjA4ztPc-uV_yoLt3zav_h-844Q&ust=1494045276818886), the [HC-06 Bluetooth module](https://arduino-info.wikispaces.com/BlueTooth-HC05-HC06-Modules-How-To)
 
-Schematics and diagrams:  
+*Photos and diagrams:*  
 [Receiver hardware block diagram](https://www.dropbox.com/s/xktt6sdt3eljejj/Receiver%20Block%20Diagram.png?dl=0) </br>
 [Receiver software block diagram](https://www.dropbox.com/s/w6xfivj9uftpmkx/Software%20Block%20Diagram.png?dl=0)</br>
 [Transmitter system block diagram](https://www.dropbox.com/s/oaagyijevjokmhq/Transmitter%20Block%20Diagram.png?dl=0)</br>
