@@ -23,3 +23,4 @@ The instructions were sent in five portions: start of instruction indicator, thr
 
 As a bonus feature, an android app was created using the [MIT app creator](http://appinventor.mit.edu/explore/). The app interfaced with a Bluetooth module (HC-06) which was connected to the transmission system. The app allowed for touch selection of instructions, but voice activated controls as well.
 
+### [Full Report](https://www.dropbox.com/s/kpzc95esqymajvl/ELEC_291_Project_2_Report.pdf?dl=0) 
