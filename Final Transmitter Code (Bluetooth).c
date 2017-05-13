@@ -413,7 +413,7 @@ int main (void)
 			_delay_ms(50);
 			
 			//Turns wave ON after signal transmission
-			interrupt_flag=0;
+			interrupt_flag = 0;
 		}
 	}
 	return 0;
